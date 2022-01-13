@@ -1,0 +1,3 @@
+[release]
+log_level = "critical"
+cli_colors = false

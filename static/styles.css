@@ -1,0 +1,36 @@
+.article {
+    font-size: medium;
+    text-align: left;
+    flex-flow: row wrap;
+    inline-size: 50%;
+    overflow: wrap;
+    float: left;
+    position: relative;
+}
+.flex-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+a {
+    color: #ea6962;
+}
+h1 {
+    color: #7daea3;
+}
+h2 {
+    color: #89b482;
+}
+h3 {
+    color: #d8a657;
+}
+h4 {
+    color: #d3869b;
+}
+footer {
+    width: 100%;
+}
+body {
+    background: #1c1c1c;
+    color: #d4be98;
+}

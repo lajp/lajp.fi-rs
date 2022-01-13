@@ -1,0 +1,15 @@
+{% extends "base" %}
+{% block content %}
+<h2>Welcome to the blog of Luukas Pörtfors</h2>
+<p>You can always return to <a href="https://lajp.fi">the main page</a> if you feel like it</p>
+<p>Here is a list of all the articles from the most recent one to the oldest one</p>
+<br><br>
+{% for item in blogentries %}
+    <div>
+        <h4>{{ item.date }}</h4>
+        <h3><a href="{{ item.path }}">{{ item.title }}</a></h3>
+        <p>{{ item.description }}</p>
+    </div>
+{% endfor %}
+<br><br><br>
+{% endblock content %}

@@ -1,0 +1,14 @@
+{% extends "base" %}
+{% block content %}
+<h2 style="text-align: center;">Welcome to the website of Luukas Pörtfors</h2>
+<p>Learn more about me through these following links:</p>
+<span>
+<img style="float: right;" src="/static/locu.webp" width=25% alt="A handsome guy (me)">
+<ul>
+<li><a href="/about-me">About me</a></li>
+<li><a href="https://github.com/lajp">My GitHub</a></li>
+<li><a href="/linux-config">My linux configuration</a></li>
+<li><a href="https://blog.lajp.fi">My personal blog</a></li>
+</ul>
+</span>
+{% endblock content %}
