@@ -44,3 +44,8 @@ code {
     background: #32302f;
     font-size: large;
 }
+@media only screen and (max-width: 600px) {
+    .article {
+        inline-size: 100%;
+    }
+}
