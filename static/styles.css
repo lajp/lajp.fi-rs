@@ -1,4 +1,5 @@
 .article {
+    font-family: Liberation Mono;
     font-size: medium;
     text-align: left;
     flex-flow: row wrap;
