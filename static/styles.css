@@ -34,3 +34,12 @@ body {
     background: #1c1c1c;
     color: #d4be98;
 }
+.codediv {
+    background: #32302f;
+    font-size: large;
+    padding-left: 12px;
+}
+code {
+    background: #32302f;
+    font-size: large;
+}
