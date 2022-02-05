@@ -5,14 +5,14 @@
 <h3>Introduction</h3>
 
 <p>I was recently introduced to the <a href="https://projecteuler.net">Project Euler</a>-problemset.
-As a friend of problems and a fairly experienced C-programmer I decided to give them a try.</p>
+As a friend of problems and a fairly experienced C-programmer, I decided to give them a try.</p>
 
-<p><a href="https://projecteuler.net/problem=3">The third problem</a> called "Largest prime factor"
+<p><a href="https://projecteuler.net/problem=3">The third problem</a>, called "Largest prime factor"
 was about, well, finding the largest prime factor of a given number.
 This is quite easy to brute-force even for an inexperienced programmer and
 I came up with a solution of my own in what must've been less than a couple of minutes.</p>
 
-<p>After thinking about it for a while I decided that I would attempt to further
+<p>After thinking about it for a while, I decided that I would attempt to further
 optimize my solution even though it was already enough to solve the given problem with ease.
 The main motive for this optimization was that I knew that I'd have to rewrite the function
 anyways for a calculator program that I'm working on together with a friend.
