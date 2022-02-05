@@ -51,7 +51,7 @@ impl Database {
             let mut answer = String::new();
             stdin().read_line(&mut answer).unwrap();
             if !answer.starts_with('y') {
-                print!("Skipping entry!");
+                println!("Skipping entry!");
                 continue;
             }
             print!("Enter title: ");
