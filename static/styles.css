@@ -39,6 +39,7 @@ body {
     background: #32302f;
     font-size: large;
     padding-left: 12px;
+    overflow-x: scroll;
 }
 code {
     background: #32302f;
