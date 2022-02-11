@@ -18,6 +18,7 @@
             <div>
                 <footer>
                     <p>Contact me via <a href="mailto:lajp@iki.fi">email</a>. <a href="/static/pgp.txt">My Pubkey</a>. <code>ID: 71B6 6E51 17E9 65D9</code></p>
+                    <p>The source code of this website is available for reading <a> href="https://github.com/lajp/lajp.fi-rs">here</a>.</p>
                 </footer>
             </div>
         </div>
