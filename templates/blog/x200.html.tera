@@ -1,5 +1,5 @@
-{% extends "base" %}
-{% block content %}
+{% extends "blogbase" %}
+{% block blogcontent %}
 <h2>My ThinkPad X200</h2>
 <img width=100% src="/static/x200_1.png" alt="1st pic of the X200">
 <img width=100% src="/static/x200_2.png" alt="2nd pic of the X200">
@@ -53,4 +53,4 @@ You get the basic idea...</p>
 most likely seeding some Linux-ISOs. Apart from that the machine has really no uses exept for the occational times when I take it for typing stuff on
 the aforementoned amazing keyboard and even despite the lack of uses for it right now it is still a valuable relic to keep have around :).
 <br><br><br>
-{% endblock content %}
+{% endblock blogcontent %}

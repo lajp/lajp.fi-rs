@@ -1,0 +1,6 @@
+{% extends "base" %}
+{% block content %}
+<p>Buttons in case you want to go <a href="/blog">back to blogindex</a> or <a href="/">Back to front page</a></p>
+{% block blogcontent %}
+{% endblock blogcontent %}
+{% endblock content %}

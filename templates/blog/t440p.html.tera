@@ -1,5 +1,5 @@
-{% extends "base" %}
-{% block content %}
+{% extends "blogbase" %}
+{% block blogcontent %}
 <h2>ThinkPad T440p</h2>
 <div><img width=100% src="/static/t440p_b4.png" alt="T440p pre trackpad swap"><p>The T440p before swapping out the clunkpad</p></div>
 <div><img width=100% src="/static/t440p_after.png" alt="T440p post trackpad swap"><p>The T440p after swapping out the clunkpad</p></div>
@@ -140,4 +140,4 @@ in 2021 and probably for the coming 5 years as well.</p>
 <h3>Contacts</h3>
 <p>If you enjoyed this article or have some suggestions or comments about it, please email me at <a href="mailto:lajp@iki.fi">lajp@iki.fi</a></p>
 <br><br><br>
-{% endblock content %}
+{% endblock blogcontent %}

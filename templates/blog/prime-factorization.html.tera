@@ -1,5 +1,5 @@
-{% extends "base" %}
-{% block content %}
+{% extends "blogbase" %}
+{% block blogcontent %}
 <h2>Optimizing a prime factorization algorithm</h2>
 
 <h3>Introduction</h3>
@@ -229,4 +229,4 @@ and might just help us understand the idea behind them.</p>
 <p>I'm sure the code can still be improved somehow, but my current solution is what I'd consider good enough. If you can come up with some further improvements,
 please email them to me and I might update them to this article.</p>
 <p>Thank you for reading this article! Feel free to use the code featured in this article to whatever you please :)</p>
-{% endblock content %}
+{% endblock blogcontent %}
