@@ -1,0 +1,7 @@
+{% extends "base" %}
+{% block content %}
+<h2 style="text-align: center;">Welcome to the abyss!</h2>
+<p>Here you'll find absolutely nothing except for picture of my ThinkStack.</p>
+<p>If you feel intimidated by the sheer handsomeness of the ThinkStack, click <a href="/">here</a> to return to the front page</p>
+<img src="/static/thinkstack.webp" width="100%">
+{% endblock content %}

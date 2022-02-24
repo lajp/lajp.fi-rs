@@ -36,6 +36,11 @@ async fn blogarticle(article: String) -> Template {
     Template::render(format!("blog/{}", article), json!({}))
 }
 
+#[catch(default)] // Everything is 404 D:
+fn not_found() -> Template {
+    Template::render("not-found", json!({}))
+}
+
 #[launch]
 fn rocket() -> _ {
     dotenv::dotenv().ok();
@@ -43,9 +48,8 @@ fn rocket() -> _ {
     database.check_for_new_entries();
     rocket::build()
         .mount("/static", FileServer::from("static"))
-        .mount("/", routes![index])
-        .mount("/", routes![pages])
-        .mount("/", routes![blogindex])
+        .register("/", catchers![not_found])
+        .mount("/", routes![index, pages, blogindex])
         .mount("/blog", routes![blogarticle])
         .attach(Template::fairing())
         .manage(database)
