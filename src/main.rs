@@ -138,13 +138,10 @@ async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
     env_logger::init();
 
-    let blogcontext = web::Data::new(BlogContext::new(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/templates/blog/"
-    )));
+    let blogcontext = web::Data::new(BlogContext::new("./templates/blog/"));
 
     HttpServer::new(move || {
-        let tera = Tera::new(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/**/*")).unwrap();
+        let tera = Tera::new("templates/**/*").unwrap();
 
         App::new()
             .app_data(web::Data::new(tera))
