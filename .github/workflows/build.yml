@@ -5,15 +5,23 @@ on:
     branches: [ main ]
     paths:
       - '**.rs'
-    
+
 jobs:
   build:
-    runs-on: ubuntu-18.04
+    name: Build
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --release
-    - uses: actions/upload-artifact@v2
-      with:
-        name: build
-        path: target/release/lajp_fi-rs
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+      - uses: actions/upload-artifact@v2
+        with:
+          name: build
+          path: target/release/lajp_fi-rs
