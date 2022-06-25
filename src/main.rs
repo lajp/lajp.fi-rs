@@ -5,15 +5,15 @@ use actix_web::{error, middleware, web, App, Error, HttpResponse, HttpServer, Re
 use chrono::NaiveDate;
 use regex::Regex;
 use serde_derive::Serialize;
-use std::lazy::SyncLazy;
+use std::sync::LazyLock;
 use tera::Tera;
 
-static TITLE_REGEX: SyncLazy<Regex> =
-    SyncLazy::new(|| Regex::new(r#"\{%\sblock\stitle\s%\}(.*)\{%\sendblock"#).unwrap());
-static DATE_REGEX: SyncLazy<Regex> =
-    SyncLazy::new(|| Regex::new(r#"\{%\sblock\sdate\s%\}(.*)\{%\sendblock"#).unwrap());
-static DESCRIPTION_REGEX: SyncLazy<Regex> =
-    SyncLazy::new(|| Regex::new(r#"\{%\sblock\sdescription\s%\}(.*)\{%\sendblock"#).unwrap());
+static TITLE_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"\{%\sblock\stitle\s%\}(.*)\{%\sendblock"#).unwrap());
+static DATE_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"\{%\sblock\sdate\s%\}(.*)\{%\sendblock"#).unwrap());
+static DESCRIPTION_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"\{%\sblock\sdescription\s%\}(.*)\{%\sendblock"#).unwrap());
 
 #[macro_use]
 extern crate actix_web;
@@ -28,19 +28,19 @@ pub struct BlogEntry {
 
 impl BlogEntry {
     fn new(template: &str) -> Self {
-        let title = if let Some(m) = TITLE_REGEX.captures(&template).unwrap().get(1) {
+        let title = if let Some(m) = TITLE_REGEX.captures(template).unwrap().get(1) {
             m.as_str().to_string()
         } else {
             String::new()
         };
 
-        let date = if let Some(m) = DATE_REGEX.captures(&template).unwrap().get(1) {
+        let date = if let Some(m) = DATE_REGEX.captures(template).unwrap().get(1) {
             m.as_str().to_string()
         } else {
             String::new()
         };
 
-        let description = if let Some(m) = DESCRIPTION_REGEX.captures(&template).unwrap().get(1) {
+        let description = if let Some(m) = DESCRIPTION_REGEX.captures(template).unwrap().get(1) {
             m.as_str().to_string()
         } else {
             String::new()
