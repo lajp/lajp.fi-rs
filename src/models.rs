@@ -1,5 +1,5 @@
 use chrono::NaiveDate;
-use serde::Serialize;
+use serde_derive::Serialize;
 
 #[derive(Queryable, Clone, Debug, Serialize)]
 pub struct BlogEntry {
