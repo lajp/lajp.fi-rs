@@ -140,6 +140,13 @@ async fn robots() -> Result<HttpResponse, Error> {
         .body(std::fs::read_to_string("static/robots.txt")?))
 }
 
+#[get("/humans.txt")]
+async fn humans() -> Result<HttpResponse, Error> {
+    Ok(HttpResponse::Ok()
+        .content_type("text/plain")
+        .body(std::fs::read_to_string("static/humans.txt")?))
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
@@ -160,6 +167,7 @@ async fn main() -> std::io::Result<()> {
             .service(Files::new("/static", "./static"))
             .service(blogindex)
             .service(robots)
+            .service(humans)
             .service(pages)
             .service(blogarticle)
     })
