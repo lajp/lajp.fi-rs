@@ -1,17 +1,35 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>About Me</h1>
-<p>I'm a young GNU/Linux-enthusiast from Finland who spends most of their time
+<p>I'm a young GNU/Linux-enthusiast and programmer from Finland who spends most of their time
 doing all kinds of cool stuff with computers.</p>
-<p>You can check out my projects from <a href="https://github.com/lajp">my GitHub page</a></p>
+<p>I'm also an active and respected member in the <a href="https://testausserveri.fi">Testausserveri ry</a>
+community for young Finnish hackers</p>
+
+<h3>ThinkPads</h3>
 <p>I've grown very fond of using products from the IBM/Lenovo ThinkPad -line. Currently I am a proud
-owner of two ThinkPad machines, those being the <a href="/blog/t440p">T440p</a> and the
-<a href="/blog/x200">X200</a>. Find more information about how I use my ThinkPads on their respective pages.</p>
+owner of five ThinkPad machines, those being the <a href="/blog/t440p">T440p</a> twice, the <a href="/blog/x200">X200</a>,
+the <span title="Article (and another unit) coming soon">T450s</span> and the <span title="Lent away">W540</span>.
+Find more information about how I use my ThinkPads in their respective articles.</p>
+
 <h3>Programming</h3>
-<p>I spend a big part of my time programming. I mainly use C as my programming language, but I'm capable of programming in other languages as well.
-Just recently I picket up Rust for the first time, and I've been enjoying programming in Rust alot</p>
-<p>My most recent projects include various Discord-bots written in Rust</p>
+<p>I spend a big part of my time programming. My primary programming languages are C and Rust.</p>
+<p>Here are some of my notable projects:</p>
+<ul>
+    <li><a href="https://testaustime.fi">Testaustime</a>: Tracks the users coding activity and allows them to analyze their data
+        and compete with other users. All source code is freely available <a href="https://github.com/Testaustime">here</a>.</li>
+    <li><a href="https://github.com/Testausserveri/torimies-rs">Torimies</a>: A Discord bot written in Rust,
+        that sends updates on Tori.fi listings based on filter provided by the user. It utilizes the Tori.fi
+        API which I had to reverse-engineer in order to get this working.</li>
+    <li><a href="https://github.com/lajp/blmgr">blmgr</a>: A simple, yet powerful backlight/brightness manager for Linux with a small
+        and easily hackable codebase.</li>
+</ul>
+<p>Additionally I've made contributions to large open-source projects such as
+<a href="https://github.com/transmission/transmission">Transmission</a>.</p>
+<p>Find more of my code on <a href="https://github.com/lajp">my GitHub page</a></p>
+
 <h3>Contacts</h3>
-<p>To get in touch with me, please email. I do not really use any kinds of social media on a daily basis
-which means that email is the best and most reliable way to reach me. I usually check my mail atleast once or twice a day.</p>
+<p>To get in touch with me, please email.</p>
+<p>Email is generally the best and most reliable way to reach me.</p>
+<p>An alternative way of reaching me is through Discord where my tag is <code>Luukasa#9330</code>.</p>
 {% endblock content %}
