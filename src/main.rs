@@ -173,18 +173,11 @@ async fn gallery(
     Ok(HttpResponse::Ok().content_type("text/html").body(res))
 }
 
-#[get("/robots.txt")]
-async fn robots() -> Result<HttpResponse, Error> {
-    Ok(HttpResponse::Ok()
-        .content_type("text/plain")
-        .body(std::fs::read_to_string("static/robots.txt")?))
-}
-
-#[get("/humans.txt")]
-async fn humans() -> Result<HttpResponse, Error> {
-    Ok(HttpResponse::Ok()
-        .content_type("text/plain")
-        .body(std::fs::read_to_string("static/humans.txt")?))
+#[get("/{entity}.txt")]
+async fn entities(path: web::Path<(String,)>) -> Result<HttpResponse, Error> {
+    let content = std::fs::read_to_string(format!("static/{}.txt", &path.0))
+        .map_err(|_| error::ErrorNotFound("I do not know of this entity, sorry"))?;
+    Ok(HttpResponse::Ok().content_type("text/plain").body(content))
 }
 
 #[actix_web::main]
@@ -209,8 +202,7 @@ async fn main() -> std::io::Result<()> {
             .service(Files::new("/static", "./static"))
             .service(blogindex)
             .service(gallery)
-            .service(robots)
-            .service(humans)
+            .service(entities)
             .service(pages)
             .service(blogarticle)
     })
