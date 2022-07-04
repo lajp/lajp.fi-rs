@@ -83,6 +83,53 @@ impl BlogContext {
     }
 }
 
+#[derive(Serialize, Debug, Clone)]
+pub struct Image {
+    path: String,
+    name: String,
+}
+
+impl Image {
+    fn new(path: &str) -> Self {
+        Self {
+            name: if let Some(idx) = path.rfind('/') {
+                path[idx + 1..].to_string()
+            } else {
+                String::new()
+            },
+            path: path[1..].to_string(), // Strip the redundant "." from the start
+        }
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ImageGallery {
+    path: String,
+    images: Vec<Image>,
+}
+
+impl ImageGallery {
+    fn new(path: &str) -> Self {
+        let mut images = Vec::new();
+
+        std::fs::read_dir(std::path::Path::new(path))
+            .unwrap()
+            .for_each(|file| {
+                if let Ok(f) = file {
+                    if let Some(path) = f.path().to_str() {
+                        let image = Image::new(path);
+                        images.push(image);
+                    }
+                }
+            });
+
+        Self {
+            path: path.to_string(),
+            images,
+        }
+    }
+}
+
 #[get("/")]
 async fn index(tmpl: web::Data<tera::Tera>) -> Result<HttpResponse, Error> {
     let res = tmpl
@@ -133,6 +180,20 @@ async fn blogarticle(
     Ok(HttpResponse::Ok().content_type("text/html").body(res))
 }
 
+#[get("/gallery")]
+async fn gallery(
+    tmpl: web::Data<tera::Tera>,
+    imagegallery: web::Data<ImageGallery>,
+) -> Result<HttpResponse, Error> {
+    let res = tmpl
+        .render(
+            "gallery.html",
+            &tera::Context::from_serialize(&imagegallery).unwrap(),
+        )
+        .map_err(|_| error::ErrorInternalServerError("Template error"))?;
+    Ok(HttpResponse::Ok().content_type("text/html").body(res))
+}
+
 #[get("/robots.txt")]
 async fn robots() -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok()
@@ -153,6 +214,7 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     let blogcontext = web::Data::new(BlogContext::new("./templates/blog/"));
+    let imagegallery = web::Data::new(ImageGallery::new("./static/gallery/"));
 
     HttpServer::new(move || {
         let tera = Tera::new("templates/**/*").unwrap();
@@ -160,12 +222,14 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(web::Data::new(tera))
             .app_data(web::Data::clone(&blogcontext))
+            .app_data(web::Data::clone(&imagegallery))
             .wrap(middleware::Logger::new(
                 r#"%{r}a "%r" %s %b "%{Referer}i" "%{User-Agent}i" %Dms"#,
             ))
             .service(index)
             .service(Files::new("/static", "./static"))
             .service(blogindex)
+            .service(gallery)
             .service(robots)
             .service(humans)
             .service(pages)
