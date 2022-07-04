@@ -2,11 +2,8 @@
 {% block content %}
 <h2>GeoGuessr gallery</h2>
 <p>A collection of nice screenshots and a lot more</p>
-<br><br>
 <div class="masonry-bricks-container">
 {% for image in images %}
-<div>
-    <img src="{{ image.path }}" alt="{{ image.name }}">
-</div>
+<img src="{{ image.path }}" alt="{{ image.name }}">
 {% endfor %}
 {% endblock content %}
