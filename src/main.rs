@@ -83,7 +83,7 @@ pub struct Image {
 impl Image {
     fn new(path: &str) -> Self {
         Self {
-            name: path.rsplitn(1, '/').next().unwrap_or_default().to_string(),
+            name: path.rsplit('/').next().unwrap_or_default().to_string(),
             path: path[1..].to_string(), // Strip the redundant "." from the start
         }
     }
