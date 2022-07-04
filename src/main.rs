@@ -173,10 +173,10 @@ async fn gallery(
     Ok(HttpResponse::Ok().content_type("text/html").body(res))
 }
 
-#[get("/{entity}.txt")]
-async fn entities(path: web::Path<(String,)>) -> Result<HttpResponse, Error> {
+#[get("/{file}.txt")]
+async fn txtfiles(path: web::Path<(String,)>) -> Result<HttpResponse, Error> {
     let content = std::fs::read_to_string(format!("static/{}.txt", &path.0))
-        .map_err(|_| error::ErrorNotFound("I do not know of this entity, sorry"))?;
+        .map_err(|_| error::ErrorNotFound("This, I do not have :/"))?;
     Ok(HttpResponse::Ok().content_type("text/plain").body(content))
 }
 
@@ -202,7 +202,7 @@ async fn main() -> std::io::Result<()> {
             .service(Files::new("/static", "./static"))
             .service(blogindex)
             .service(gallery)
-            .service(entities)
+            .service(txtfiles)
             .service(pages)
             .service(blogarticle)
     })
