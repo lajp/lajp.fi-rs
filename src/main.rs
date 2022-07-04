@@ -28,23 +28,13 @@ pub struct BlogEntry {
 
 impl BlogEntry {
     fn new(template: &str) -> Self {
-        let title = if let Some(m) = TITLE_REGEX.captures(template).unwrap().get(1) {
-            m.as_str().to_string()
-        } else {
-            String::new()
-        };
-
-        let date = if let Some(m) = DATE_REGEX.captures(template).unwrap().get(1) {
-            m.as_str().to_string()
-        } else {
-            String::new()
-        };
-
-        let description = if let Some(m) = DESCRIPTION_REGEX.captures(template).unwrap().get(1) {
-            m.as_str().to_string()
-        } else {
-            String::new()
-        };
+        let [title, date, description] = [&TITLE_REGEX, &DATE_REGEX, &DESCRIPTION_REGEX].map(|r| {
+            if let Some(m) = r.captures(template).unwrap().get(1) {
+                m.as_str().to_string()
+            } else {
+                String::new()
+            }
+        });
 
         Self {
             title,
@@ -62,17 +52,18 @@ pub struct BlogContext {
 
 impl BlogContext {
     fn new(path: &str) -> Self {
-        let mut entries = Vec::new();
-
-        for file in std::fs::read_dir(std::path::Path::new(path)).unwrap() {
-            let content = std::fs::read_to_string(file.as_ref().unwrap().path()).unwrap();
-            let mut entry = BlogEntry::new(&content);
-            entry.path = format!(
-                "/blog/{}",
-                file.as_ref().unwrap().file_name().to_str().unwrap()
-            );
-            entries.push(entry);
-        }
+        let mut entries = std::fs::read_dir(std::path::Path::new(path))
+            .unwrap()
+            .map(|file| {
+                let content = std::fs::read_to_string(file.as_ref().unwrap().path()).unwrap();
+                let mut entry = BlogEntry::new(&content);
+                entry.path = format!(
+                    "/blog/{}",
+                    file.as_ref().unwrap().file_name().to_str().unwrap()
+                );
+                entry
+            })
+            .collect::<Vec<_>>();
 
         entries.sort_by_key(|k| NaiveDate::parse_from_str(&k.date, "%F").unwrap());
         entries.reverse();
@@ -92,11 +83,7 @@ pub struct Image {
 impl Image {
     fn new(path: &str) -> Self {
         Self {
-            name: if let Some(idx) = path.rfind('/') {
-                path[idx + 1..].to_string()
-            } else {
-                String::new()
-            },
+            name: path.rsplitn(1, '/').next().unwrap_or_default().to_string(),
             path: path[1..].to_string(), // Strip the redundant "." from the start
         }
     }
@@ -110,18 +97,10 @@ pub struct ImageGallery {
 
 impl ImageGallery {
     fn new(path: &str) -> Self {
-        let mut images = Vec::new();
-
-        std::fs::read_dir(std::path::Path::new(path))
+        let images = std::fs::read_dir(std::path::Path::new(path))
             .unwrap()
-            .for_each(|file| {
-                if let Ok(f) = file {
-                    if let Some(path) = f.path().to_str() {
-                        let image = Image::new(path);
-                        images.push(image);
-                    }
-                }
-            });
+            .filter_map(|file| Some(Image::new(file.ok()?.path().to_str()?)))
+            .collect::<Vec<_>>();
 
         Self {
             path: path.to_string(),
