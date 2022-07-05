@@ -1,4 +1,5 @@
 use chrono::NaiveDate;
+use rand::seq::SliceRandom;
 use regex::Regex;
 use serde_derive::Serialize;
 use std::sync::LazyLock;
@@ -66,14 +67,14 @@ impl BlogContext {
     }
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct Image {
-    path: String,
-    name: String,
+    pub path: String,
+    pub name: String,
 }
 
 impl Image {
-    fn new(path: &str) -> Self {
+    pub fn new(path: &str) -> Self {
         Self {
             name: path.rsplit('/').next().unwrap_or_default().to_string(),
             path: path[1..].to_string(), // Strip the redundant "." from the start
@@ -84,7 +85,7 @@ impl Image {
 #[derive(Serialize, Debug, Clone)]
 pub struct ImageGallery {
     path: String,
-    images: Vec<Image>,
+    pub images: Vec<Image>,
 }
 
 impl ImageGallery {
@@ -98,5 +99,14 @@ impl ImageGallery {
             path: path.to_string(),
             images,
         }
+    }
+
+    pub fn add_image(&mut self, img: Image) {
+        self.images.push(img)
+    }
+
+    pub fn shuffle(&mut self) {
+        let mut rng = rand::thread_rng();
+        self.images.shuffle(&mut rng);
     }
 }

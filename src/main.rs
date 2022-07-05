@@ -7,8 +7,11 @@ use actix_multipart::Multipart;
 use actix_web::{error, guard, middleware, web, App, Error, HttpResponse, HttpServer, Result};
 use futures_util::stream::StreamExt as _;
 use models::*;
+use rand::distributions::Alphanumeric;
+use rand::Rng;
 use std::fs::File;
 use std::io::Write;
+use std::sync::Mutex;
 use tera::Tera;
 
 #[macro_use]
@@ -65,27 +68,50 @@ async fn blogarticle(
 }
 
 #[post("/gallery")]
-async fn add_to_gallery(mut payload: Multipart) -> Result<HttpResponse, Error> {
+async fn add_to_gallery(
+    mut payload: Multipart,
+    imagegallery: web::Data<Mutex<ImageGallery>>,
+) -> Result<HttpResponse, Error> {
     let mut filename = String::new();
     let mut content = Vec::<u8>::new();
 
     while let Some(item) = payload.next().await {
         let mut field = item?;
-        if field.name() == "filename" {
-            while let Some(chunk) = field.next().await {
-                filename.push_str(std::str::from_utf8(&chunk?)?)
-            }
-        }
-        if field.name() == "content" {
+        if field.name() == "file" {
+            let cd = field.content_disposition();
+            filename = cd.get_filename().unwrap().to_string();
+
             while let Some(chunk) = field.next().await {
                 content.append(&mut chunk?.to_vec());
             }
         }
     }
 
-    if !(filename.is_empty() || content.is_empty()) {
-        let mut newfile = File::create(format!("./static/gallery/{}", &filename))?;
+    if !content.is_empty() {
+        let path = format!("./static/gallery/{}", &filename);
+        let mut img = Image::new(&path);
+
+        while imagegallery.lock().unwrap().images.contains(&img) {
+            let mut ext = format!(".{}", &img.name.rsplit('.').next().unwrap_or_default());
+            if ext.len() == 1 {
+                ext.clear();
+            }
+
+            let c = rand::thread_rng().sample(&Alphanumeric) as char;
+            img.path.truncate(img.path.len() - ext.len());
+            img.name.truncate(img.name.len() - ext.len());
+            img.path.push(c);
+            img.path.push_str(&ext);
+            img.name.push(c);
+            img.name.push_str(&ext);
+        }
+
+        let mut newfile = File::create(format!(".{}", &img.path))?;
         newfile.write_all(content.as_slice())?;
+
+        imagegallery.lock().unwrap().add_image(img);
+        imagegallery.lock().unwrap().shuffle();
+
         return Ok(HttpResponse::Ok().finish());
     }
 
@@ -95,7 +121,7 @@ async fn add_to_gallery(mut payload: Multipart) -> Result<HttpResponse, Error> {
 #[get("/gallery")]
 async fn gallery(
     tmpl: web::Data<tera::Tera>,
-    imagegallery: web::Data<ImageGallery>,
+    imagegallery: web::Data<Mutex<ImageGallery>>,
 ) -> Result<HttpResponse, Error> {
     let res = tmpl
         .render(
@@ -119,7 +145,7 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     let blogcontext = web::Data::new(BlogContext::new("./templates/blog/"));
-    let imagegallery = web::Data::new(ImageGallery::new("./static/gallery/"));
+    let imagegallery = web::Data::new(Mutex::new(ImageGallery::new("./static/gallery/")));
 
     HttpServer::new(move || {
         let tera = Tera::new("templates/**/*").unwrap();

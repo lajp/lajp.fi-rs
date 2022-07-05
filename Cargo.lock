@@ -831,6 +831,7 @@ dependencies = [
  "dotenv",
  "env_logger",
  "futures-util",
+ "rand",
  "regex",
  "serde",
  "serde_derive",
