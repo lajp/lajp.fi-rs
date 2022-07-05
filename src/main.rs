@@ -3,8 +3,12 @@
 mod models;
 
 use actix_files::Files;
-use actix_web::{error, middleware, web, App, Error, HttpResponse, HttpServer, Result};
+use actix_multipart::Multipart;
+use actix_web::{error, guard, middleware, web, App, Error, HttpResponse, HttpServer, Result};
+use futures_util::stream::StreamExt as _;
 use models::*;
+use std::fs::File;
+use std::io::Write;
 use tera::Tera;
 
 #[macro_use]
@@ -60,6 +64,34 @@ async fn blogarticle(
     Ok(HttpResponse::Ok().content_type("text/html").body(res))
 }
 
+#[post("/gallery")]
+async fn add_to_gallery(mut payload: Multipart) -> Result<HttpResponse, Error> {
+    let mut filename = String::new();
+    let mut content = Vec::<u8>::new();
+
+    while let Some(item) = payload.next().await {
+        let mut field = item?;
+        if field.name() == "filename" {
+            while let Some(chunk) = field.next().await {
+                filename.push_str(std::str::from_utf8(&chunk?)?)
+            }
+        }
+        if field.name() == "content" {
+            while let Some(chunk) = field.next().await {
+                content.append(&mut chunk?.to_vec());
+            }
+        }
+    }
+
+    if !(filename.is_empty() || content.is_empty()) {
+        let mut newfile = File::create(format!("./static/gallery/{}", &filename))?;
+        newfile.write_all(content.as_slice())?;
+        return Ok(HttpResponse::Ok().finish());
+    }
+
+    Err(error::ErrorBadRequest("You have done stupiding"))
+}
+
 #[get("/gallery")]
 async fn gallery(
     tmpl: web::Data<tera::Tera>,
@@ -92,6 +124,11 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         let tera = Tera::new("templates/**/*").unwrap();
 
+        let galleryauth = format!(
+            "Bearer {}",
+            std::env::var("GALLERY_TOKEN").expect("NO GALLERY_TOKEN")
+        );
+
         App::new()
             .app_data(web::Data::new(tera))
             .app_data(web::Data::clone(&blogcontext))
@@ -106,6 +143,21 @@ async fn main() -> std::io::Result<()> {
             .service(txtfiles)
             .service(pages)
             .service(blogarticle)
+            .service(
+                web::scope("")
+                    .guard(guard::fn_guard(move |ctx| {
+                        ctx.head().headers().contains_key("Authorization")
+                            && ctx
+                                .head()
+                                .headers()
+                                .get("Authorization")
+                                .unwrap()
+                                .to_str()
+                                .unwrap()
+                                == galleryauth
+                    }))
+                    .service(add_to_gallery),
+            )
     })
     .bind(("127.0.0.1", 6900))?
     .run()
