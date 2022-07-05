@@ -110,7 +110,6 @@ async fn add_to_gallery(
         newfile.write_all(content.as_slice())?;
 
         imagegallery.lock().unwrap().add_image(img);
-        imagegallery.lock().unwrap().shuffle();
 
         return Ok(HttpResponse::Ok().finish());
     }
@@ -123,6 +122,7 @@ async fn gallery(
     tmpl: web::Data<tera::Tera>,
     imagegallery: web::Data<Mutex<ImageGallery>>,
 ) -> Result<HttpResponse, Error> {
+    imagegallery.lock().unwrap().shuffle();
     let res = tmpl
         .render(
             "gallery.html",
