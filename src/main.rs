@@ -171,17 +171,10 @@ async fn main() -> std::io::Result<()> {
             .service(blogarticle)
             .service(
                 web::scope("")
-                    .guard(guard::fn_guard(move |ctx| {
-                        ctx.head().headers().contains_key("Authorization")
-                            && ctx
-                                .head()
-                                .headers()
-                                .get("Authorization")
-                                .unwrap()
-                                .to_str()
-                                .unwrap()
-                                == galleryauth
-                    }))
+                    .guard(guard::Header(
+                        "Authorization",
+                        Box::leak(galleryauth.into_boxed_str()),
+                    ))
                     .service(add_to_gallery),
             )
     })
