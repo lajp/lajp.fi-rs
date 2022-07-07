@@ -198,6 +198,8 @@ smtp_tls_CAfile = /etc/letsencrypt/live/mail.example1.com/cert.pem</code>
 smtpd_sasl_path = private/auth
 smtpd_sasl_auth_enable = yes
 
+always_add_missing_headers = yes
+
 home_mailbox = Mail/Inbox/
 mailbox_command = /usr/lib/dovecot/deliver
 
@@ -208,7 +210,7 @@ tls_server_sni_maps = hash:/etc/postfix/vmail_ssl</code>
 </pre>
 </div>
 <h4>Prepare the postfix hashtables</h4>
-<p>Add virutal address mappings to /etc/postfix/virtual</p>
+<p>Add virtual address mappings to /etc/postfix/virtual</p>
 <div class="codediv">
 <pre>
 <code>localuser@example2.com localuser
