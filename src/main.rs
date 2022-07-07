@@ -21,7 +21,11 @@ use tera::Tera;
 extern crate actix_web;
 
 #[post("/update")]
-async fn update(payload: web::Json<UpdatePayload>) -> Result<HttpResponse, Error> {
+async fn update(
+    payload: web::Json<UpdatePayload>,
+    tmpl: web::Data<Mutex<Tera>>,
+    blogcontext: web::Data<Mutex<BlogContext>>,
+) -> Result<HttpResponse, Error> {
     Command::new("git").arg("pull").output().unwrap();
 
     if let Some(workflow) = &payload.workflow_run {
@@ -61,19 +65,26 @@ async fn update(payload: web::Json<UpdatePayload>) -> Result<HttpResponse, Error
             .args(["+x", "lajp_fi-rs"])
             .output()
             .unwrap();
-    }
-    std::thread::spawn(|| {
-        // A very, very cursed way of restarting
-        std::thread::sleep(std::time::Duration::from_secs(2));
-        std::process::exit(1);
-    });
 
-    Ok(HttpResponse::Ok().body("Update done! Restarting now!"))
+        std::thread::spawn(|| {
+            // A very, very cursed way of restarting
+            std::thread::sleep(std::time::Duration::from_secs(2));
+            std::process::exit(1);
+        });
+        return Ok(HttpResponse::Ok().body("Update done! Restarting now!"));
+    }
+
+    tmpl.lock().unwrap().full_reload().unwrap();
+    blogcontext.lock().unwrap().reload();
+
+    Ok(HttpResponse::Ok().body("Update done! Reloading files now!"))
 }
 
 #[get("/")]
-async fn index(tmpl: web::Data<tera::Tera>) -> Result<HttpResponse, Error> {
+async fn index(tmpl: web::Data<Mutex<Tera>>) -> Result<HttpResponse, Error> {
     let res = tmpl
+        .lock()
+        .unwrap()
         .render("index.html", &tera::Context::new())
         .map_err(|_| error::ErrorInternalServerError("Template error"))?;
     Ok(HttpResponse::Ok().content_type("text/html").body(res))
@@ -81,10 +92,12 @@ async fn index(tmpl: web::Data<tera::Tera>) -> Result<HttpResponse, Error> {
 
 #[get("/{page}")]
 async fn pages(
-    tmpl: web::Data<tera::Tera>,
+    tmpl: web::Data<Mutex<Tera>>,
     path: web::Path<(String,)>,
 ) -> Result<HttpResponse, Error> {
     let res = tmpl
+        .lock()
+        .unwrap()
         .render(
             &format!("{}.html", &path.0.trim_end_matches(".html")),
             &tera::Context::new(),
@@ -95,13 +108,15 @@ async fn pages(
 
 #[get("/blog")]
 async fn blogindex(
-    tmpl: web::Data<tera::Tera>,
-    blogcontext: web::Data<BlogContext>,
+    tmpl: web::Data<Mutex<Tera>>,
+    blogcontext: web::Data<Mutex<BlogContext>>,
 ) -> Result<HttpResponse, Error> {
     let res = tmpl
+        .lock()
+        .unwrap()
         .render(
             "blogindex.html",
-            &tera::Context::from_serialize(&blogcontext).unwrap(),
+            &tera::Context::from_serialize(&*blogcontext.lock().unwrap()).unwrap(),
         )
         .map_err(|_| error::ErrorInternalServerError("Template error"))?;
     Ok(HttpResponse::Ok().content_type("text/html").body(res))
@@ -109,10 +124,12 @@ async fn blogindex(
 
 #[get("/blog/{article}")]
 async fn blogarticle(
-    tmpl: web::Data<tera::Tera>,
+    tmpl: web::Data<Mutex<Tera>>,
     path: web::Path<(String,)>,
 ) -> Result<HttpResponse, Error> {
     let res = tmpl
+        .lock()
+        .unwrap()
         .render(
             &format!("blog/{}.html", &path.0.trim_end_matches(".html")),
             &tera::Context::new(),
@@ -173,11 +190,13 @@ async fn add_to_gallery(
 
 #[get("/gallery")]
 async fn gallery(
-    tmpl: web::Data<tera::Tera>,
+    tmpl: web::Data<Mutex<Tera>>,
     imagegallery: web::Data<Mutex<ImageGallery>>,
 ) -> Result<HttpResponse, Error> {
     imagegallery.lock().unwrap().shuffle();
     let res = tmpl
+        .lock()
+        .unwrap()
         .render(
             "gallery.html",
             &tera::Context::from_serialize(&imagegallery).unwrap(),
@@ -198,11 +217,11 @@ async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
     env_logger::init();
 
-    let blogcontext = web::Data::new(BlogContext::new("./templates/blog/"));
+    let blogcontext = web::Data::new(Mutex::new(BlogContext::new("./templates/blog/")));
     let imagegallery = web::Data::new(Mutex::new(ImageGallery::new("./static/gallery/")));
 
     HttpServer::new(move || {
-        let tera = Tera::new("templates/**/*").unwrap();
+        let tera = Mutex::new(Tera::new("templates/**/*").unwrap());
 
         let galleryauth = format!(
             "Bearer {}",

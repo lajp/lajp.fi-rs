@@ -40,6 +40,7 @@ impl BlogEntry {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct BlogContext {
+    path: String,
     blogentries: Vec<BlogEntry>,
 }
 
@@ -62,8 +63,13 @@ impl BlogContext {
         entries.reverse();
 
         Self {
+            path: path.to_string(),
             blogentries: entries,
         }
+    }
+
+    pub fn reload(&mut self) {
+        self.blogentries = Self::new(&self.path).blogentries;
     }
 }
 
