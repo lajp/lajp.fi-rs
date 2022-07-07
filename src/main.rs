@@ -61,7 +61,7 @@ async fn update(payload: web::Json<UpdatePayload>) -> Result<HttpResponse, Error
             .unwrap();
     }
     std::thread::spawn(|| {
-        // A very cursed way of restarting
+        // A very, very cursed way of restarting
         std::thread::sleep(std::time::Duration::from_secs(2));
         std::process::exit(1);
     });
