@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 use rand::seq::SliceRandom;
 use regex::Regex;
-use serde_derive::Serialize;
+use serde_derive::{Deserialize, Serialize};
 use std::sync::LazyLock;
 
 static TITLE_REGEX: LazyLock<Regex> =
@@ -109,4 +109,24 @@ impl ImageGallery {
         let mut rng = rand::thread_rng();
         self.images.shuffle(&mut rng);
     }
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Artifact {
+    pub archive_download_url: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Artifacts {
+    pub artifacts: Vec<Artifact>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct WorkflowRun {
+    pub artifacts_url: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct UpdatePayload {
+    pub workflow_run: Option<WorkflowRun>,
 }

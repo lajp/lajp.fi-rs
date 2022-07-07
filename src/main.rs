@@ -11,11 +11,63 @@ use rand::distributions::Alphanumeric;
 use rand::Rng;
 use std::fs::File;
 use std::io::Write;
+use std::process::Command;
 use std::sync::Mutex;
 use tera::Tera;
 
 #[macro_use]
 extern crate actix_web;
+
+#[post("/update")]
+async fn update(payload: web::Json<UpdatePayload>) -> Result<HttpResponse, Error> {
+    Command::new("git").arg("pull").output().unwrap();
+
+    if let Some(workflow) = &payload.workflow_run {
+        let token = std::env::var("GITHUB_TOKEN").expect("No GITHUB_TOKEN");
+        let client = reqwest::Client::builder()
+            .user_agent("balls") // required by github
+            .build()
+            .unwrap();
+
+        let res = client
+            .get(&workflow.artifacts_url)
+            .header("Authorization", format!("token {}", &token))
+            .send()
+            .await
+            .unwrap();
+
+        let download_url =
+            &res.json::<Artifacts>().await.unwrap().artifacts[0].archive_download_url;
+
+        let res = client
+            .get(download_url)
+            .header("Authorization", format!("token {}", &token))
+            .send()
+            .await
+            .unwrap();
+
+        let mut zipfile = File::create("build.zip")?;
+        let mut content = std::io::Cursor::new(res.bytes().await.unwrap());
+        std::io::copy(&mut content, &mut zipfile).unwrap();
+
+        Command::new("unzip")
+            .args(["-o", "build.zip"])
+            .output()
+            .unwrap();
+
+        Command::new("chmod")
+            .args(["+x", "lajp_fi-rs"])
+            .output()
+            .unwrap();
+    }
+    std::thread::spawn(|| {
+        // A very cursed way of restarting
+        std::thread::sleep(std::time::Duration::from_secs(2));
+        std::process::exit(1);
+    });
+
+    Ok(HttpResponse::Ok().body("Update done! Restarting now!"))
+}
 
 #[get("/")]
 async fn index(tmpl: web::Data<tera::Tera>) -> Result<HttpResponse, Error> {
@@ -155,6 +207,11 @@ async fn main() -> std::io::Result<()> {
             std::env::var("GALLERY_TOKEN").expect("NO GALLERY_TOKEN")
         );
 
+        let update_auth = format!(
+            "sha265={}",
+            sha256::digest(std::env::var("GITHUB_SECRET").expect("No GITHUB_SECRET"))
+        );
+
         App::new()
             .app_data(web::Data::new(tera))
             .app_data(web::Data::clone(&blogcontext))
@@ -176,6 +233,14 @@ async fn main() -> std::io::Result<()> {
                         Box::leak(galleryauth.into_boxed_str()),
                     ))
                     .service(add_to_gallery),
+            )
+            .service(
+                web::scope("")
+                    .guard(guard::Header(
+                        "X-Hub-Signature-256",
+                        Box::leak(update_auth.into_boxed_str()),
+                    ))
+                    .service(update),
             )
     })
     .bind(("127.0.0.1", 6900))?
