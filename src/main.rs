@@ -6,8 +6,15 @@ mod models;
 use crate::models::*;
 use actix_files::Files;
 use actix_multipart::Multipart;
-use actix_web::{error, guard, middleware, web, App, Error, HttpResponse, HttpServer, Result};
+use actix_web::{
+    error, guard, middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer, Result,
+};
+use crypto::hmac::Hmac;
+use crypto::mac::Mac;
+use crypto::mac::MacResult;
+use crypto::sha2::Sha256;
 use futures_util::stream::StreamExt as _;
+use hex::FromHex;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use std::fs::File;
@@ -19,7 +26,30 @@ use tera::Tera;
 #[macro_use]
 extern crate actix_web;
 
-async fn update(payload: web::Json<UpdatePayload>) -> Result<HttpResponse, Error> {
+#[post("/update")]
+async fn update(raw_payload: web::Bytes, req: HttpRequest) -> Result<HttpResponse, Error> {
+    let Some(signature) = req.head().headers.get("X-Hub-Signature-256") else {
+        return Err(error::ErrorBadRequest("No signature"));
+    };
+
+    let secret = std::env::var("GITHUB_SECRET").expect("No GITHUB_SECRET");
+    let sbytes = secret.as_bytes();
+
+    let mut mac = Hmac::new(Sha256::new(), sbytes);
+    mac.input(&raw_payload);
+
+    // Sig string is sha256=deadbeef
+    let real_signature = signature.to_str().unwrap()[7..].as_bytes();
+
+    if mac.result() != MacResult::new(&Vec::from_hex(real_signature).unwrap()) {
+        return Err(error::ErrorUnauthorized("Invalid signagure"));
+    }
+
+    let payload: UpdatePayload =
+        serde_json::from_str(&String::from_utf8(raw_payload.to_vec()).unwrap()).unwrap();
+
+    // Start of actual update
+
     Command::new("git").arg("pull").output().unwrap();
 
     if let Some(workflow) = &payload.workflow_run {
@@ -229,13 +259,7 @@ async fn main() -> std::io::Result<()> {
                     ))
                     .service(add_to_gallery),
             )
-            .service(
-                web::resource(format!(
-                    "/update/{}",
-                    std::env::var("GITHUB_SECRET").expect("No GITHUB_SECRET")
-                ))
-                .route(web::post().to(update)),
-            )
+            .service(update)
     })
     .bind(("127.0.0.1", 6900))?
     .run()
