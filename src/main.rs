@@ -1,12 +1,13 @@
 #![feature(once_cell)]
+#![feature(let_else)]
 
 mod models;
 
+use crate::models::*;
 use actix_files::Files;
 use actix_multipart::Multipart;
 use actix_web::{error, guard, middleware, web, App, Error, HttpResponse, HttpServer, Result};
 use futures_util::stream::StreamExt as _;
-use models::*;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use std::fs::File;
@@ -18,7 +19,6 @@ use tera::Tera;
 #[macro_use]
 extern crate actix_web;
 
-#[post("/update")]
 async fn update(payload: web::Json<UpdatePayload>) -> Result<HttpResponse, Error> {
     Command::new("git").arg("pull").output().unwrap();
 
@@ -207,11 +207,6 @@ async fn main() -> std::io::Result<()> {
             std::env::var("GALLERY_TOKEN").expect("NO GALLERY_TOKEN")
         );
 
-        let update_auth = format!(
-            "sha265={}",
-            sha256::digest(std::env::var("GITHUB_SECRET").expect("No GITHUB_SECRET"))
-        );
-
         App::new()
             .app_data(web::Data::new(tera))
             .app_data(web::Data::clone(&blogcontext))
@@ -235,12 +230,11 @@ async fn main() -> std::io::Result<()> {
                     .service(add_to_gallery),
             )
             .service(
-                web::scope("")
-                    .guard(guard::Header(
-                        "X-Hub-Signature-256",
-                        Box::leak(update_auth.into_boxed_str()),
-                    ))
-                    .service(update),
+                web::resource(format!(
+                    "/update/{}",
+                    std::env::var("GITHUB_SECRET").expect("No GITHUB_SECRET")
+                ))
+                .route(web::post().to(update)),
             )
     })
     .bind(("127.0.0.1", 6900))?
