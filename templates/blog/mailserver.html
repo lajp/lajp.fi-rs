@@ -1,0 +1,345 @@
+{% extends "blogbase.html" %}
+{% block title %}TUTORIAL: How I setup my email server{% endblock %}
+{% block date %}2022-07-07{% endblock %}
+{% block description %}A walkthrough of how my mail server is setup. It utilizes Postfix and Dovecot and features spam-filtering, SNI based TLS and support for multiple domain names{% endblock %}
+{% block blogcontent %}
+<h2>Setting up an email server</h2>
+<h3>Introduction</h3>
+<p>In this article I go over my email server setup.</p>
+<p>I also attempt to provide a step-by-step guide for the reader to follow and to potentially setup their own server with</p>
+<p>In this tutorial I will be setting up an email server for the domains <code>example1.com</code> and <code>example2.com</code>. The person following this tutorial can fill in their own domain(s) and add more domains. This setup should work with as many domains as one pleases</p>
+<p>Although all the domains will work fine, it is mandatory to choose a primary domain out of them and use that one when for example prompted for <code>/etc/mailname</code></p>
+<p>In this tutorial I use a ubuntu-based system. Some steps and configurations may vary from distribution to distribution.</p>
+<p>It is important that you follow and read through the tutorial with though and don't just copy the commands into the terminal. :)</p>
+
+<h3>Basic DNS</h3>
+<p>Getting an email server begins first with acquiring a domain and soon thereafter configuring the DNS for that domain</p>
+<p>There are two (or three if you want IPv6) records you need to configure in this initial step:</p>
+<ul>
+    <li><code>A mail.example1.com &lt;ipv4_of_your_server&gt;</code></li>
+    <li><code>AAAA mail.example1.com &lt;ipv6_of_your_server&gt;</code></li>
+    <li><code>MX example1.com mail.example1.com</code></li>
+</ul>
+<p>Configure the above records for all of your domains</p>
+
+<h3>Setting up SSL</h3>
+<p>In this tutorial im using certbot to easily setup SSL.</p>
+<p>I'll also be using nginx as a temporary webserver to get through the challenges</p>
+<p>Just run the following commands:</p>
+<div class="codediv">
+<pre>
+<code>apt-get update && apt-get upgrade -y
+apt-get install nginx python3-certbot-nginx
+systemctl start nginx
+certbot -d mail.example1.com mail.example2.com</code>
+</pre>
+</div>
+<p>Your certificates should now be generated and you should be ready to move to the next step</p>
+
+<h3>Installing the dependencies</h3>
+<p>In this step we install all the programs used in the setup</p>
+<p>If you don't plan on using a component of this setup, here's your chance to not install it in the first place.</p>
+<div class="codediv">
+<pre>
+<code>apt-get install postfix dovecot-imapd dovecot-sieve opendkim spamassassin spamc opendkim-tools</code>
+</pre>
+</div>
+
+<h3>Configuring dovecot</h3>
+<p>We start our configuration from dovecot which I generally consider to be easier than configuring postfix.</p>
+<h4>Add stuff to config file</h4>
+<p>For dovecot the configuration is as simple as copying the following stuff to <code>/etc/dovecot/dovecot.conf</code> and changing/adding in your own domain(s)</p>
+<div class="codediv">
+<pre>
+<code>disable_plaintext_auth = no
+mail_privileged_group = mail
+
+auth_mechanisms = plain login
+auth_username_format = %n
+
+protocols = $protocols imap
+
+mail_location = maildir:~/Mail:INBOX=~/Mail/Inbox:LAYOUT=fs
+namespace inbox {
+    inbox = yes
+
+    mailbox Drafts {
+        special_use = \Drafts
+        auto = subscribe
+    }
+
+    mailbox Junk {
+        special_use = \Junk
+        auto = subscribe
+    }
+
+    mailbox Sent {
+        special_use = \Sent
+        auto = subscribe
+    }
+
+    mailbox Trash {
+        special_use = \Trash
+        auto = subscribe
+    }
+
+    mailbox Archive {
+        special_use = \Archive
+        auto = subscribe
+    }
+}
+
+userdb {
+    driver = passwd
+}
+
+passdb {
+    driver = pam
+}
+
+protocol lda {
+    mail_plugins = $mail_plugins sieve
+}
+
+protocol lmtp {
+    mail_plugins = $mail_plugins sieve
+}
+
+plugin {
+    sieve = ~/.dovecot.sieve
+    sieve_default = /var/lib/dovecot/sieve/default.sieve
+    sieve_dir = ~/.sieve
+    sieve_global_dir = /var/lib/dovecot/sieve/
+}
+
+
+service auth {
+    unix_listener /var/spool/postfix/private/auth {
+        mode = 0660
+        user = postfix
+        group = postfix
+    }
+}
+
+ssl = required
+ssl_cert = &lt;/etc/letsencrypt/live/mail.example1.com/fullchain.pem
+ssl_key = &lt;/etc/letsencrypt/live/mail.example1.com/privkey.pem
+
+local_name mail.example1.com {
+    ssl_cert = &lt;/etc/letsencrypt/live/mail.example1.com/fullchain.pem
+    ssl_key = &lt;/etc/letsencrypt/live/mail.exmaple1.com/privkey.pem
+}
+
+local_name mail.example2.com {
+    ssl_cert = &lt;/etc/letsencrypt/live/mail.example2.com/fullchain.pem
+    ssl_key = &lt;/etc/letsencrypt/live/mail.example2.com/privkey.pem
+}</code>
+</pre>
+</div>
+<h4>Restart dovecot</h4>
+<p>After a quick restart of the dovecot service and everything should be done on that part</p>
+<div class="codediv">
+<pre>
+<code>systemctl restart dovecot</code>
+</pre>
+</div>
+
+<h3>Initial postfix configuration</h3>
+<p>Configuring postfix is a bit trickier</p>
+<p>Luckily for us, debian/ubuntu provides a sane default configuration where we can just add/fill in some additional stuff</p>
+<h4>Edit stuff in /etc/postfix/master.cf</h4>
+<p>Uncomment the following code blocks</p>
+<div class="codediv">
+<pre>
+<code>submission inet n       -       y       -       -       smtpd
+  -o syslog_name=postfix/submission
+  -o smtpd_tls_security_level=encrypt
+  -o smtpd_sasl_auth_enable=yes
+  -o smtpd_tls_auth_only=yes
+  -o smtpd_reject_unlisted_recipient=no
+  -o smtpd_client_restrictions=$mua_client_restrictions
+  -o smtpd_helo_restrictions=$mua_helo_restrictions
+  -o smtpd_sender_restrictions=$mua_sender_restrictions
+  -o smtpd_recipient_restrictions=
+  -o smtpd_relay_restrictions=permit_sasl_authenticated,reject
+  -o milter_macro_daemon_name=ORIGINATING</code>
+</pre>
+</div>
+<p>and</p>
+<div class="codediv">
+<pre>
+<code>smtps     inet  n       -       y       -       -       smtpd
+  -o syslog_name=postfix/smtps
+  -o smtpd_tls_wrappermode=yes
+  -o smtpd_sasl_auth_enable=yes
+  -o smtpd_reject_unlisted_recipient=no
+  -o smtpd_client_restrictions=$mua_client_restrictions
+  -o smtpd_helo_restrictions=$mua_helo_restrictions
+  -o smtpd_sender_restrictions=$mua_sender_restrictions
+  -o smtpd_recipient_restrictions=
+  -o smtpd_relay_restrictions=permit_sasl_authenticated,reject
+  -o milter_macro_daemon_name=ORIGINATING</code>
+</pre>
+</div>
+<h4>Edit and add stuff to /etc/postfix/main.cf</h4>
+<p>Change the values of these settings already configured in the file:</p>
+<div class="codediv">
+<pre>
+<code>myhostname = mail.example1.com
+smtpd_tls_cert_file = /etc/letsencrypt/live/mail.example1.com/fullchain.pem
+smtpd_tls_key_file = /etc/letsencrypt/live/mail.example1.com/privkey.pem
+smtp_tls_CAfile = /etc/letsencrypt/live/mail.example1.com/cert.pem</code>
+</pre>
+</div>
+<p>Now add some new lines to the same file</p>
+<div class="codediv">
+<pre>
+<code>smtpd_sasl_type = dovecot
+smtpd_sasl_path = private/auth
+smtpd_sasl_auth_enable = yes
+
+home_mailbox = Mail/Inbox/
+mailbox_command = /usr/lib/dovecot/deliver
+
+virtual_alias_maps = hash:/etc/postfix/virtual
+virtual_alias_domains = example2.com
+
+tls_server_sni_maps = hash:/etc/postfix/vmail_ssl</code>
+</pre>
+</div>
+<h4>Prepare the postfix hashtables</h4>
+<p>Add virutal address mappings to /etc/postfix/virtual</p>
+<div class="codediv">
+<pre>
+<code>localuser@example2.com localuser
+postmaster@example2.com postmaster</code>
+</pre>
+</div>
+<p>Optionally if you don't want any virutal mappings and want all the domains to use the same users, just add the secondary domains to the <code>mydestination</code> list in /etc/postix/main.cf</p>
+<p>Now add the certificates to the SNI-map in /etc/postfix/vmail_ssl</p>
+<div class="codediv">
+<pre>
+<code>mail.example1.com /etc/letsencrypt/live/mail.example1.com/privkey.pem /etc/letsencrypt/live/mail.example1.com/fullchain.pem
+mail.example2.com /etc/letsencrypt/live/mail.example2.com/privkey.pem /etc/letsencrypt/live/mail.example2.com/fullchain.pem</code>
+</pre>
+</div>
+<h4>Generate the tables and restart postfix and dovecot</h4>
+<p>Finally generate the tables and reload postfix and dovecot</p>
+<div class="codediv">
+<pre>
+<code>postmap /etc/postfix/virtual
+postmap -F hash:/etc/postfix/vmail_ssl
+systemctl restart dovecot
+systemctl restart postfix</code>
+</pre>
+</div>
+<p>Now you should have a working setup for basic sending and receiving of email</p>
+<p>Unfortunately, mostly due to spam and phishing emails, some additional configuration is required</p>
+
+<h3>Configuring Spamassassin</h3>
+<h4>Add stuff to the postfix config</H4>
+<p>Head back over to /etc/postfix/master.cf and edit the following block to look like this</p>
+<div class="codediv">
+<pre>
+<code>smtp      inet  n       -       y       -       -       smtpd
+    -o content_filter=spamassassin</code>
+</pre>
+</div>
+<p>Additionally add this to the end of the file:</p>
+<div class="codediv">
+<pre>
+<code>spamassassin unix -       n       n       -       -       pipe
+  flags=R user=debian-spamd argv=/usr/bin/spamc -e /usr/sbin/sendmail -oi -f ${sender} ${recipient}</code>
+</pre>
+</div>
+<p>Optionally spamassassin can be further configured through its configuration file located in /etc/spamassassin/local.cf but I won't be going into detail in configuring it.</p>
+<h4>Enable spamassassin, start it and reload postfix</h4>
+<p>After running these commands spamassassin should be up and running</p>
+<div class="codediv">
+<pre>
+<code>systemctl enable spamassassin
+systemctl start spamassassin
+systemctl reload postfix</code>
+</pre>
+</div>
+
+<h3>Setting up OpenDKIM</h3>
+<p>OpenDKIM helps you get through most of the spam filters :))</p>
+<p>Setting it up is luckily quite trivial once you know what you're doing</p>
+<h4>Add stuff to the configuration file</h4>
+<p>Add these lines to the configuration file located in /etc/opendkim.conf:</p>
+<div class="codediv">
+<pre>
+<code>Domain example1.com example2.com
+RequireSafeKeys false
+Mode sv
+KeyTable file:/etc/dkimkeys/keytable
+SigningTable refile:/etc/dkimkeys/signingtable
+InternalHosts refile:/etc/dkimkeys/trustedhosts
+Socket inet:12301@localhost</code>
+</pre>
+</div>
+<h4>Configure the tables</h4>
+<p>Add these lines to these files</p>
+<p>/etc/dkimkeys/signingtable:</p>
+<div class="codediv">
+<pre>
+<code>*@example1.com default._domainkey.example1.com
+*@example2.com default._domainkey.example2.com</code>
+</pre>
+</div>
+<p>/etc/dkimkeys/keytable:</p>
+<div class="codediv">
+<pre>
+<code>default._domainkey.example1.com example1.com:default:/etc/dkimkeys/example1.com/default.private
+default._domainkey.example2.com example2.com:default:/etc/dkimkeys/example2.com/default.private</code>
+</pre>
+</div>
+<p>/etc/dkimkeys/trustedhosts</p>
+<div class="codediv">
+<pre>
+<code>127.0.0.1
+::1
+*.example1.com
+*.example2.com</code>
+</pre>
+</div>
+<h4>Generate keys and add the DNS records</h4>
+<p>Do the following for all the domains:</p>
+<div class="codediv">
+<pre>
+<code>mkdir /etc/dkimkeys/example1.com
+opendkim-genkey -b 1024 -d example1.com -D /etc/dkimkeys/example1.com -s default -v
+chown opendkim:opendkim -R /etc/dkimkeys</code>
+</pre>
+</div>
+<p>The records can be found under /etc/dkimkeys/example1.com/default.txt and should be added to the DNS as follows:</p>
+<code>TXT default._domainkey &lt;contents_of_default.txt&gt;</code>
+<h4>Connect postfix to opendkim</h4>
+<p>The final step is to connect opendkim with postfix</p>
+<p>This is done by adding the following lines into /etc/postfix/main.cf:</p>
+<div class="codediv">
+<pre>
+<code>milter_default_action = accept
+milter_protocol = 6
+smtpd_milters = inet:localhost:12301
+non_smtpd_milters = $smtpd_milters</code>
+</pre>
+</div>
+<h4>Restart opendkim and reload postfix</h4>
+<p>After this all should be up and running.</p>
+<div class="codediv">
+<pre>
+<code>systemctl restart opendkim
+systemctl reload postfix</code>
+</pre>
+</div>
+<h3>Use instructions</h3>
+<p>You should be able to connect to the mailserver from any of the domain using the mail. subdomain and the port 933 for IMAP and 587 for smtp</p>
+<p>I've personally tested this setup on (neo)Mutt as well as on thunderbird</p>
+<p>A user account can be added by adding a user on the system and adding the user to the <code>mail</code> group.</p>
+<p>The password will be the users password which they use for loggin in.</p>
+<h3>Conclusion</h3>
+<p>Now your brand new mailserver <em>should</em> be configured.</p>
+<p>If something doesn't seem to work or there's some kind of inaccuracy in this article, don't hesitate to contact me via email. We'll figure out the solution together :)</p>
+{% endblock blogcontent %}
