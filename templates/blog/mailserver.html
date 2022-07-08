@@ -213,8 +213,8 @@ tls_server_sni_maps = hash:/etc/postfix/vmail_ssl</code>
 <p>Add virtual address mappings to <b>/etc/postfix/virtual</b></p>
 <div class="codediv">
 <pre>
-<code>localuser@example2.com localuser
-postmaster@example2.com postmaster</code>
+<code>localuser@<b>example2.com</b> localuser
+postmaster@<b>example2.com</b> postmaster</code>
 </pre>
 </div>
 <p>Optionally if you don't want any virutal mappings and want all the domains to use the same users, just add the secondary domains to the <code>mydestination</code>
@@ -273,7 +273,7 @@ systemctl reload postfix</code>
 <p>Add these lines to the configuration file located in <b>/etc/opendkim.conf</b>:</p>
 <div class="codediv">
 <pre>
-<code>Domain example1.com example2.com
+<code>Domain <b>example1.com</b> <b>example2.com</b>
 RequireSafeKeys false
 Mode sv
 KeyTable file:/etc/dkimkeys/keytable
@@ -287,15 +287,15 @@ Socket inet:12301@localhost</code>
 <p><b>/etc/dkimkeys/signingtable</b>:</p>
 <div class="codediv">
 <pre>
-<code>*@example1.com default._domainkey.example1.com
-*@example2.com default._domainkey.example2.com</code>
+<code>*@<b>example1.com</b> default._domainkey.<b>example1.com</b>
+*@<b>example2.com</b> default._domainkey.<b>example2.com</b></code>
 </pre>
 </div>
 <p><b>/etc/dkimkeys/keytable</b>:</p>
 <div class="codediv">
 <pre>
-<code>default._domainkey.example1.com example1.com:default:/etc/dkimkeys/example1.com/default.private
-default._domainkey.example2.com example2.com:default:/etc/dkimkeys/example2.com/default.private</code>
+<code>default._domainkey.<b>example1.com</b> <b>example1.com</b>:default:/etc/dkimkeys/<b>example1.com</b>/default.private
+default._domainkey.<b>example2.com</b> <b>example2.com</b>:default:/etc/dkimkeys/<b>example2.com</b>/default.private</code>
 </pre>
 </div>
 <p><b>/etc/dkimkeys/trustedhosts</b></p>
@@ -303,16 +303,16 @@ default._domainkey.example2.com example2.com:default:/etc/dkimkeys/example2.com/
 <pre>
 <code>127.0.0.1
 ::1
-*.example1.com
-*.example2.com</code>
+*.<b>example1.com</b>
+*.<b>example2.com</b></code>
 </pre>
 </div>
 <h4>Generate keys and add the DNS records</h4>
 <p>Do the following for all the domains:</p>
 <div class="codediv">
 <pre>
-<code>mkdir /etc/dkimkeys/example1.com
-opendkim-genkey -b 1024 -d example1.com -D /etc/dkimkeys/example1.com -s default -v
+<code>mkdir /etc/dkimkeys/<b>example1.com</b>
+opendkim-genkey -b 1024 -d <b>example1.com</b> -D /etc/dkimkeys/<b>example1.com</b> -s default -v
 chown opendkim:opendkim -R /etc/dkimkeys</code>
 </pre>
 </div>
