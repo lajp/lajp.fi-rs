@@ -232,28 +232,31 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(tera))
             .app_data(web::Data::clone(&blogcontext))
             .app_data(web::Data::clone(&imagegallery))
-            .wrap(middleware::Logger::new(
-                r#"%{r}a "%r" %s %b "%{Referer}i" "%{User-Agent}i" %Dms"#,
-            ))
-            .service(index)
             .service(Files::new("/static", "./static"))
-            .service(blogindex)
-            .service(gallery)
-            .service(txtfiles)
-            .service(pages)
-            .service(blogarticle)
             .service(
                 web::scope("")
-                    .guard(guard::Header(
-                        "Authorization",
-                        Box::leak(galleryauth.into_boxed_str()),
+                    .wrap(middleware::Logger::new(
+                        r#"%{r}a "%r" %s %b "%{Referer}i" "%{User-Agent}i" %Dms"#,
                     ))
-                    .service(add_to_gallery),
-            )
-            .service(
-                web::scope("")
-                    .wrap(payloadverifier::PayloadVerifier)
-                    .service(update),
+                    .service(index)
+                    .service(blogindex)
+                    .service(gallery)
+                    .service(txtfiles)
+                    .service(pages)
+                    .service(blogarticle)
+                    .service(
+                        web::scope("")
+                            .guard(guard::Header(
+                                "Authorization",
+                                Box::leak(galleryauth.into_boxed_str()),
+                            ))
+                            .service(add_to_gallery),
+                    )
+                    .service(
+                        web::scope("")
+                            .wrap(payloadverifier::PayloadVerifier)
+                            .service(update),
+                    ),
             )
     })
     .bind(("127.0.0.1", 6900))?
