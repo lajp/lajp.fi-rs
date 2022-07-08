@@ -51,6 +51,9 @@ body {
     background: #1c1c1c;
     color: #d4be98;
 }
+.codediv b {
+    color: #d8a657;
+}
 .codediv {
     background: #32302f;
     font-size: large;

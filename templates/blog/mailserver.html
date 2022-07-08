@@ -7,8 +7,8 @@
 <h3>Introduction</h3>
 <p>In this article I go over my email server setup.</p>
 <p>I also attempt to provide a step-by-step guide for the reader to follow and to potentially setup their own server with</p>
-<p>In this tutorial I will be setting up an email server for the domains <code>example1.com</code> and <code>example2.com</code>. The person following this tutorial can fill in their own domain(s) and add more domains. This setup should work with as many domains as one pleases</p>
-<p>Although all the domains will work fine, it is mandatory to choose a primary domain out of them and use that one when for example prompted for <code>/etc/mailname</code></p>
+<p>In this tutorial I will be setting up an email server for the domains <b>example1.com</b> and <b>example2.com</b>. The person following this tutorial can fill in their own domain(s) and add more domains. This setup should work with as many domains as one pleases</p>
+<p>Although all the domains will work fine, it is mandatory to choose a primary domain out of them and use that one when for example prompted for <b>/etc/mailname</b></p>
 <p>In this tutorial I use a ubuntu-based system. Some steps and configurations may vary from distribution to distribution.</p>
 <p>It is important that you follow and read through the tutorial with though and don't just copy the commands into the terminal. :)</p>
 
@@ -31,7 +31,7 @@
 <code>apt-get update && apt-get upgrade -y
 apt-get install nginx python3-certbot-nginx
 systemctl start nginx
-certbot -d mail.example1.com -d mail.example2.com</code>
+certbot -d <b>mail.example1.com</b> -d <b>mail.example2.com</b></code>
 </pre>
 </div>
 <p>Your certificates should now be generated and you should be ready to move to the next step</p>
@@ -48,7 +48,7 @@ certbot -d mail.example1.com -d mail.example2.com</code>
 <h3>Configuring dovecot</h3>
 <p>We start our configuration from dovecot which I generally consider to be easier than configuring postfix.</p>
 <h4>Add stuff to config file</h4>
-<p>For dovecot the configuration is as simple as copying the following stuff to <code>/etc/dovecot/dovecot.conf</code> and changing/adding in your own domain(s)</p>
+<p>For dovecot the configuration is as simple as copying the following stuff to <b>/etc/dovecot/dovecot.conf</b> and changing/adding in your own domain(s)</p>
 <div class="codediv">
 <pre>
 <code>disable_plaintext_auth = no
@@ -122,17 +122,17 @@ service auth {
 }
 
 ssl = required
-ssl_cert = &lt;/etc/letsencrypt/live/mail.example1.com/fullchain.pem
-ssl_key = &lt;/etc/letsencrypt/live/mail.example1.com/privkey.pem
+ssl_cert = &lt;/etc/letsencrypt/live/<b>mail.example1.com</b>/fullchain.pem
+ssl_key = &lt;/etc/letsencrypt/live/<b>mail.example1.com</b>/privkey.pem
 
-local_name mail.example1.com {
-    ssl_cert = &lt;/etc/letsencrypt/live/mail.example1.com/fullchain.pem
-    ssl_key = &lt;/etc/letsencrypt/live/mail.exmaple1.com/privkey.pem
+local_name <b>mail.example1.com</b> {
+    ssl_cert = &lt;/etc/letsencrypt/live/<b>mail.example1.com</b>/fullchain.pem
+    ssl_key = &lt;/etc/letsencrypt/live/<b>mail.exmaple1.com</b>/privkey.pem
 }
 
-local_name mail.example2.com {
-    ssl_cert = &lt;/etc/letsencrypt/live/mail.example2.com/fullchain.pem
-    ssl_key = &lt;/etc/letsencrypt/live/mail.example2.com/privkey.pem
+local_name <b>mail.example2.com</b> {
+    ssl_cert = &lt;/etc/letsencrypt/live/<b>mail.example2.com</b>/fullchain.pem
+    ssl_key = &lt;/etc/letsencrypt/live/<b>mail.example2.com</b>/privkey.pem
 }</code>
 </pre>
 </div>
@@ -147,7 +147,7 @@ local_name mail.example2.com {
 <h3>Initial postfix configuration</h3>
 <p>Configuring postfix is a bit trickier</p>
 <p>Luckily for us, debian/ubuntu provides a sane default configuration where we can just add/fill in some additional stuff</p>
-<h4>Edit stuff in /etc/postfix/master.cf</h4>
+<h4>Edit stuff in <b>/etc/postfix/master.cf</b></h4>
 <p>Uncomment the following code blocks</p>
 <div class="codediv">
 <pre>
@@ -181,14 +181,14 @@ local_name mail.example2.com {
   -o milter_macro_daemon_name=ORIGINATING</code>
 </pre>
 </div>
-<h4>Edit and add stuff to /etc/postfix/main.cf</h4>
+<h4>Edit and add stuff to <b>/etc/postfix/main.cf</b></h4>
 <p>Change the values of these settings already configured in the file:</p>
 <div class="codediv">
 <pre>
-<code>myhostname = mail.example1.com
-smtpd_tls_cert_file = /etc/letsencrypt/live/mail.example1.com/fullchain.pem
-smtpd_tls_key_file = /etc/letsencrypt/live/mail.example1.com/privkey.pem
-smtp_tls_CAfile = /etc/letsencrypt/live/mail.example1.com/cert.pem</code>
+<code>myhostname = <b>mail.example1.com</b>
+smtpd_tls_cert_file = /etc/letsencrypt/live/<b>mail.example1.com/</b>fullchain.pem
+smtpd_tls_key_file = /etc/letsencrypt/live/<b>mail.example1.com</b>/privkey.pem
+smtp_tls_CAfile = /etc/letsencrypt/live/<b>mail.example1.com</b>/cert.pem</code>
 </pre>
 </div>
 <p>Now add some new lines to the same file</p>
@@ -204,25 +204,26 @@ home_mailbox = Mail/Inbox/
 mailbox_command = /usr/lib/dovecot/deliver
 
 virtual_alias_maps = hash:/etc/postfix/virtual
-virtual_alias_domains = example2.com
+virtual_alias_domains = <b>example2.com</b>
 
 tls_server_sni_maps = hash:/etc/postfix/vmail_ssl</code>
 </pre>
 </div>
 <h4>Prepare the postfix hashtables</h4>
-<p>Add virtual address mappings to /etc/postfix/virtual</p>
+<p>Add virtual address mappings to <b>/etc/postfix/virtual</b></p>
 <div class="codediv">
 <pre>
 <code>localuser@example2.com localuser
 postmaster@example2.com postmaster</code>
 </pre>
 </div>
-<p>Optionally if you don't want any virutal mappings and want all the domains to use the same users, just add the secondary domains to the <code>mydestination</code> list in /etc/postix/main.cf</p>
-<p>Now add the certificates to the SNI-map in /etc/postfix/vmail_ssl</p>
+<p>Optionally if you don't want any virutal mappings and want all the domains to use the same users, just add the secondary domains to the <code>mydestination</code>
+list in <b>/etc/postix/main.cf</b></p>
+<p>Now add the certificates to the SNI-map in <b>/etc/postfix/vmail_ssl</b></p>
 <div class="codediv">
 <pre>
-<code>mail.example1.com /etc/letsencrypt/live/mail.example1.com/privkey.pem /etc/letsencrypt/live/mail.example1.com/fullchain.pem
-mail.example2.com /etc/letsencrypt/live/mail.example2.com/privkey.pem /etc/letsencrypt/live/mail.example2.com/fullchain.pem</code>
+<code><b>mail.example1.com</b> /etc/letsencrypt/live/<b>mail.example1.com</b>/privkey.pem /etc/letsencrypt/live/<b>mail.example1.com</b>/fullchain.pem
+<b>mail.example2.com</b> /etc/letsencrypt/live/<b>mail.example2.com</b>/privkey.pem /etc/letsencrypt/live/<b>mail.example2.com</b>/fullchain.pem</code>
 </pre>
 </div>
 <h4>Generate the tables and restart postfix and dovecot</h4>
@@ -240,7 +241,7 @@ systemctl restart postfix</code>
 
 <h3>Configuring Spamassassin</h3>
 <h4>Add stuff to the postfix config</H4>
-<p>Head back over to /etc/postfix/master.cf and edit the following block to look like this</p>
+<p>Head back over to <b>/etc/postfix/master.cf</b> and edit the following block to look like this</p>
 <div class="codediv">
 <pre>
 <code>smtp      inet  n       -       y       -       -       smtpd
@@ -254,7 +255,7 @@ systemctl restart postfix</code>
   flags=R user=debian-spamd argv=/usr/bin/spamc -e /usr/sbin/sendmail -oi -f ${sender} ${recipient}</code>
 </pre>
 </div>
-<p>Optionally spamassassin can be further configured through its configuration file located in /etc/spamassassin/local.cf but I won't be going into detail in configuring it.</p>
+<p>Optionally spamassassin can be further configured through its configuration file located in <b>/etc/spamassassin/local.cf</b> but I won't be going into detail in configuring it.</p>
 <h4>Enable spamassassin, start it and reload postfix</h4>
 <p>After running these commands spamassassin should be up and running</p>
 <div class="codediv">
@@ -269,7 +270,7 @@ systemctl reload postfix</code>
 <p>OpenDKIM helps you get through most of the spam filters :))</p>
 <p>Setting it up is luckily quite trivial once you know what you're doing</p>
 <h4>Add stuff to the configuration file</h4>
-<p>Add these lines to the configuration file located in /etc/opendkim.conf:</p>
+<p>Add these lines to the configuration file located in <b>/etc/opendkim.conf</b>:</p>
 <div class="codediv">
 <pre>
 <code>Domain example1.com example2.com
@@ -283,21 +284,21 @@ Socket inet:12301@localhost</code>
 </div>
 <h4>Configure the tables</h4>
 <p>Add these lines to these files</p>
-<p>/etc/dkimkeys/signingtable:</p>
+<p><b>/etc/dkimkeys/signingtable</b>:</p>
 <div class="codediv">
 <pre>
 <code>*@example1.com default._domainkey.example1.com
 *@example2.com default._domainkey.example2.com</code>
 </pre>
 </div>
-<p>/etc/dkimkeys/keytable:</p>
+<p><b>/etc/dkimkeys/keytable</b>:</p>
 <div class="codediv">
 <pre>
 <code>default._domainkey.example1.com example1.com:default:/etc/dkimkeys/example1.com/default.private
 default._domainkey.example2.com example2.com:default:/etc/dkimkeys/example2.com/default.private</code>
 </pre>
 </div>
-<p>/etc/dkimkeys/trustedhosts</p>
+<p><b>/etc/dkimkeys/trustedhosts</b></p>
 <div class="codediv">
 <pre>
 <code>127.0.0.1
@@ -315,11 +316,11 @@ opendkim-genkey -b 1024 -d example1.com -D /etc/dkimkeys/example1.com -s default
 chown opendkim:opendkim -R /etc/dkimkeys</code>
 </pre>
 </div>
-<p>The records can be found under /etc/dkimkeys/example1.com/default.txt and should be added to the DNS as follows:</p>
+<p>The records can be found under <b>/etc/dkimkeys/example1.com/default.txt</b> and should be added to the DNS as follows:</p>
 <code>TXT default._domainkey &lt;contents_of_default.txt&gt;</code>
 <h4>Connect postfix to opendkim</h4>
 <p>The final step is to connect opendkim with postfix</p>
-<p>This is done by adding the following lines into /etc/postfix/main.cf:</p>
+<p>This is done by adding the following lines into <b>/etc/postfix/main.cf</b>:</p>
 <div class="codediv">
 <pre>
 <code>milter_default_action = accept
