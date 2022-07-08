@@ -226,6 +226,9 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         let tera = Mutex::new(Tera::new("templates/**/*").unwrap());
 
+        let secret = std::env::var("GITHUB_SECRET").expect("No GITHUB_SECRET");
+        let sbytes = secret.as_bytes();
+
         let galleryauth = format!(
             "Bearer {}",
             std::env::var("GALLERY_TOKEN").expect("NO GALLERY_TOKEN")
@@ -257,7 +260,9 @@ async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         web::scope("")
-                            .wrap(payloadverifier::PayloadVerifier)
+                            .wrap(payloadverifier::PayloadVerifier {
+                                sbytes: sbytes.to_vec(),
+                            })
                             .service(update),
                     ),
             )

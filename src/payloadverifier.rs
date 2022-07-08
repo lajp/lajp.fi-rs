@@ -12,7 +12,9 @@ use actix_web::{
 };
 use futures_util::future::LocalBoxFuture;
 
-pub struct PayloadVerifier;
+pub struct PayloadVerifier {
+    pub sbytes: Vec<u8>,
+}
 
 impl<S, B> Transform<S, ServiceRequest> for PayloadVerifier
 where
@@ -29,12 +31,14 @@ where
 
     fn new_transform(&self, service: S) -> Self::Future {
         ready(Ok(PayloadVerifierMiddleware {
+            sbytes: self.sbytes.clone(),
             service: Rc::new(service),
         }))
     }
 }
 
 pub struct PayloadVerifierMiddleware<S> {
+    sbytes: Vec<u8>,
     service: Rc<S>,
 }
 
@@ -52,6 +56,7 @@ where
 
     fn call(&self, mut req: ServiceRequest) -> Self::Future {
         let service = Rc::clone(&self.service);
+        let sbytes = self.sbytes.clone();
         let body = req.extract::<web::Bytes>();
 
         Box::pin(async move {
@@ -61,10 +66,7 @@ where
                 return Err(error::ErrorBadRequest("No signature"));
             };
 
-            let secret = std::env::var("GITHUB_SECRET").expect("No GITHUB_SECRET");
-            let sbytes = secret.as_bytes();
-
-            let mut mac = Hmac::new(Sha256::new(), sbytes);
+            let mut mac = Hmac::new(Sha256::new(), &sbytes);
             mac.input(&body);
 
             // Sig string is sha256=deadbeef
