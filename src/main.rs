@@ -42,36 +42,39 @@ async fn update(
             .await
             .unwrap();
 
-        let download_url =
-            &res.json::<Artifacts>().await.unwrap().artifacts[0].archive_download_url;
+        let artifacts_payload = res.json::<Artifacts>().await.unwrap();
 
-        let res = client
-            .get(download_url)
-            .header("Authorization", format!("token {}", &token))
-            .send()
-            .await
-            .unwrap();
+        if !artifacts_payload.artifacts.is_empty() {
+            let download_url = &artifacts_payload.artifacts[0].archive_download_url;
 
-        let mut zipfile = File::create("build.zip")?;
-        let mut content = std::io::Cursor::new(res.bytes().await.unwrap());
-        std::io::copy(&mut content, &mut zipfile).unwrap();
+            let res = client
+                .get(download_url)
+                .header("Authorization", format!("token {}", &token))
+                .send()
+                .await
+                .unwrap();
 
-        Command::new("unzip")
-            .args(["-o", "build.zip"])
-            .output()
-            .unwrap();
+            let mut zipfile = File::create("build.zip")?;
+            let mut content = std::io::Cursor::new(res.bytes().await.unwrap());
+            std::io::copy(&mut content, &mut zipfile).unwrap();
 
-        Command::new("chmod")
-            .args(["+x", "lajp_fi-rs"])
-            .output()
-            .unwrap();
+            Command::new("unzip")
+                .args(["-o", "build.zip"])
+                .output()
+                .unwrap();
 
-        std::thread::spawn(|| {
-            // A very, very cursed way of restarting
-            std::thread::sleep(std::time::Duration::from_secs(2));
-            std::process::exit(1);
-        });
-        return Ok(HttpResponse::Ok().body("Update done! Restarting now!"));
+            Command::new("chmod")
+                .args(["+x", "lajp_fi-rs"])
+                .output()
+                .unwrap();
+
+            std::thread::spawn(|| {
+                // A very, very cursed way of restarting
+                std::thread::sleep(std::time::Duration::from_secs(2));
+                std::process::exit(1);
+            });
+            return Ok(HttpResponse::Ok().body("Update done! Restarting now!"));
+        }
     }
 
     tmpl.lock().unwrap().full_reload().unwrap();
