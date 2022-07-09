@@ -29,9 +29,8 @@
 <div class="codediv">
 <pre>
 <code>apt-get update && apt-get upgrade -y
-apt-get install nginx python3-certbot-nginx
-systemctl start nginx
-certbot -d <b>mail.example1.com</b> -d <b>mail.example2.com</b></code>
+apt-get install certbot
+certbot certonly --standalone -d <b>mail.example1.com</b> -d <b>mail.example2.com</b></code>
 </pre>
 </div>
 <p>Your certificates should now be generated and you should be ready to move to the next step</p>
