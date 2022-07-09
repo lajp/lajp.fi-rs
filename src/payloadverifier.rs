@@ -1,8 +1,6 @@
-use crypto::hmac::Hmac;
-use crypto::mac::Mac;
-use crypto::mac::MacResult;
-use crypto::sha2::Sha256;
 use hex::FromHex;
+use hmac::{Hmac, Mac};
+use sha2::Sha256;
 use std::future::{ready, Ready};
 use std::rc::Rc;
 
@@ -13,7 +11,7 @@ use actix_web::{
 use futures_util::future::LocalBoxFuture;
 
 pub struct PayloadVerifier {
-    pub sbytes: Vec<u8>,
+    pub mac: Hmac<Sha256>,
 }
 
 impl<S, B> Transform<S, ServiceRequest> for PayloadVerifier
@@ -31,14 +29,14 @@ where
 
     fn new_transform(&self, service: S) -> Self::Future {
         ready(Ok(PayloadVerifierMiddleware {
-            sbytes: self.sbytes.clone(),
+            mac: self.mac.clone(),
             service: Rc::new(service),
         }))
     }
 }
 
 pub struct PayloadVerifierMiddleware<S> {
-    sbytes: Vec<u8>,
+    mac: Hmac<Sha256>,
     service: Rc<S>,
 }
 
@@ -56,7 +54,7 @@ where
 
     fn call(&self, mut req: ServiceRequest) -> Self::Future {
         let service = Rc::clone(&self.service);
-        let sbytes = self.sbytes.clone();
+        let mut mac = self.mac.clone();
         let body = req.extract::<web::Bytes>();
 
         Box::pin(async move {
@@ -66,14 +64,16 @@ where
                 return Err(error::ErrorBadRequest("No signature"));
             };
 
-            let mut mac = Hmac::new(Sha256::new(), &sbytes);
-            mac.input(&body);
+            mac.update(&body);
 
             // Sig string is sha256=deadbeef
             let real_signature = signature.to_str().unwrap()[7..].as_bytes();
 
-            if mac.result() != MacResult::new(&Vec::from_hex(real_signature).unwrap()) {
-                return Err(error::ErrorUnauthorized("Invalid signagure"));
+            if mac
+                .verify_slice(&Vec::from_hex(real_signature).unwrap())
+                .is_err()
+            {
+                return Err(error::ErrorUnauthorized("Invalid signature"));
             }
 
             let (_, mut payload) = actix_http::h1::Payload::create(true);

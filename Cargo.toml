@@ -19,9 +19,10 @@ dotenv = "0.15"
 chrono = "0.4"
 futures-util = "0.3"
 rand = "0.8.5"
-rust-crypto = "0.2.36"
 hex = "0.4.3"
 actix-http = "3.2.1"
+hmac = "0.12.1"
+sha2 = "0.10.2"
 
 [dependencies.reqwest]
 version = "0.11.11"

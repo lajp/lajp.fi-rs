@@ -9,8 +9,10 @@ use actix_files::Files;
 use actix_multipart::Multipart;
 use actix_web::{error, guard, middleware, web, App, Error, HttpResponse, HttpServer, Result};
 use futures_util::stream::StreamExt as _;
+use hmac::{Hmac, Mac};
 use rand::distributions::Alphanumeric;
 use rand::Rng;
+use sha2::Sha256;
 use std::fs::File;
 use std::io::Write;
 use std::process::Command;
@@ -261,7 +263,7 @@ async fn main() -> std::io::Result<()> {
                     .service(
                         web::scope("")
                             .wrap(payloadverifier::PayloadVerifier {
-                                sbytes: sbytes.to_vec(),
+                                mac: Hmac::<Sha256>::new_from_slice(sbytes).unwrap(),
                             })
                             .service(update),
                     ),
