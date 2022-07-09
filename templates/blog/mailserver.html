@@ -46,15 +46,15 @@ when prompted for the "System mail name" enter your primary domain which in this
 </div>
 <p>A brief breakthrough of the individual packages and what they are used for</p>
 <ul>
-    <li>postfix: The legendary <span title="mail transfer agent">MTA</span> is one of the two main components of this setup.
+    <li><b>postfix</b>: The legendary <span title="mail transfer agent">MTA</span> is one of the two main components of this setup.
         Postfix is responsible for sending/receiving mail to/from millions of other mail server around the world through the
         <span title="simple mail transfer protocol">SMTP</span>.</li>
-    <li>dovecot (dovecot-imapd dovecot-sieve): Dovecot is the other main component. It handles the imap server along with locally
+    <li><b>dovecot (-imapd, -sieve)</b>: Dovecot is the other main component. It handles the imap server along with locally
         delivering the mail to the mailboxes and authentication (postfix also uses dovecot for authentication). The sieve and imapd are optional
         components for dovecot. The sieve does local mailbox management and mail delivery while the imapd handles requests made through the
         <span title="internet mail access protocol">IMAP</span></li>
-    <li>Spamassassin, spamc: Spamassassin does spam filtering of the mail.</li>
-    <li>opendkim (, -tools): DKIM is a widely adopted internet standard that is used to prevent email spoofing. It is also particularly useful
+    <li><b>Spamassassin, spamc</b>: Spamassassin does spam filtering of the mail.</li>
+    <li><b>opendkim (, -tools)</b>: DKIM is a widely adopted internet standard that is used to prevent email spoofing. It is also particularly useful
         in making ones mails seem more legitimate and therefore in getting our mail through the spam filters of others. We use opendkim for
         signing our own sent mail and for verifying the signatures of mail sent to us by others.</li>
 </ul>
