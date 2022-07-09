@@ -8,6 +8,10 @@
     float: left;
     position: relative;
 }
+.article span {
+    text-decoration-line: underline;
+    text-decoration-style: dotted;
+}
 .flex-container {
     display: flex;
     flex-direction: column;
