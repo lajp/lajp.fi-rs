@@ -37,11 +37,27 @@ certbot certonly --standalone -d <b>mail.example1.com</b> -d <b>mail.example2.co
 <h3>Installing the dependencies</h3>
 <p>In this step we install all the programs used in the setup</p>
 <p>If you don't plan on using a component of this setup, here's your chance to not install it in the first place.</p>
+<p>When running these commands dpkg will prompt you to configure postfix. On the first screen select "Internet Site" and
+when prompted for the "System mail name" enter your primary domain which in this case is <b>example1.com</b></p>
 <div class="codediv">
 <pre>
-<code>apt-get install postfix dovecot-imapd dovecot-sieve opendkim spamassassin spamc opendkim-tools</code>
+<code>apt-get install postfix dovecot-imapd dovecot-sieve spamassassin spamc opendkim opendkim-tools</code>
 </pre>
 </div>
+<p>A brief breakthrough of the individual packages and what they are used for</p>
+<ul>
+    <li>postfix: The legendary <span title="mail transfer agent">MTA</span> is one of the two main components of this setup.
+        Postfix is responsible for sending/receiving mail to/from millions of other mail server around the world through the
+        <span title="simple mail transfer protocol">SMTP</span>.</li>
+    <li>dovecot (dovecot-imapd dovecot-sieve): Dovecot is the other main component. It handles the imap server along with locally
+        delivering the mail to the mailboxes and authentication (postfix also uses dovecot for authentication). The sieve and imapd are optional
+        components for dovecot. The sieve does local mailbox management and mail delivery while the imapd handles requests made through the
+        <span title="internet mail access protocol">IMAP</span></li>
+    <li>Spamassassin, spamc: Spamassassin does spam filtering of the mail.</li>
+    <li>opendkim (, -tools): DKIM is a widely adopted internet standard that is used to prevent email spoofing. It is also particularly useful
+        in making ones mails seem more legitimate and therefore in getting our mail through the spam filters of others. We use opendkim for
+        signing our own sent mail and for verifying the signatures of mail sent to us by others.</li>
+</ul>
 
 <h3>Configuring dovecot</h3>
 <p>We start our configuration from dovecot which I generally consider to be easier than configuring postfix.</p>
