@@ -22,7 +22,6 @@ use tera::Tera;
 #[macro_use]
 extern crate actix_web;
 
-#[post("/update")]
 async fn update(
     payload: web::Json<UpdatePayload>,
     tmpl: web::Data<Mutex<Tera>>,
@@ -261,19 +260,19 @@ async fn main() -> std::io::Result<()> {
                     .service(pages)
                     .service(blogarticle)
                     .service(
+                        web::resource("/update")
+                            .wrap(payloadverifier::PayloadVerifier {
+                                mac: Hmac::<Sha256>::new_from_slice(sbytes).unwrap(),
+                            })
+                            .route(web::post().to(update)),
+                    )
+                    .service(
                         web::scope("")
                             .guard(guard::Header(
                                 "Authorization",
                                 Box::leak(galleryauth.into_boxed_str()),
                             ))
                             .service(add_to_gallery),
-                    )
-                    .service(
-                        web::scope("")
-                            .wrap(payloadverifier::PayloadVerifier {
-                                mac: Hmac::<Sha256>::new_from_slice(sbytes).unwrap(),
-                            })
-                            .service(update),
                     ),
             )
     })
