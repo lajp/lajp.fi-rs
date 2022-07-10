@@ -7,7 +7,7 @@ mod payloadverifier;
 use crate::models::*;
 use actix_files::Files;
 use actix_multipart::Multipart;
-use actix_web::{error, guard, middleware, web, App, Error, HttpResponse, HttpServer, Result};
+use actix_web::{dev, error, guard, middleware, web, App, Error, HttpResponse, HttpServer, Result};
 use futures_util::stream::StreamExt as _;
 use hmac::{Hmac, Mac};
 use rand::distributions::Alphanumeric;
@@ -217,6 +217,13 @@ async fn txtfiles(path: web::Path<(String,)>) -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().content_type("text/plain").body(content))
 }
 
+#[get("/ip")]
+async fn whatsmyip(conn: dev::ConnectionInfo) -> Result<HttpResponse, Error> {
+    Ok(HttpResponse::Ok()
+        .content_type("text/plain")
+        .body(conn.realip_remote_addr().unwrap_or_default().to_string() + "\n"))
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
@@ -250,6 +257,7 @@ async fn main() -> std::io::Result<()> {
                     .service(blogindex)
                     .service(gallery)
                     .service(txtfiles)
+                    .service(whatsmyip)
                     .service(pages)
                     .service(blogarticle)
                     .service(
