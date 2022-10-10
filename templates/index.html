@@ -11,4 +11,20 @@
 <li><a href="/blog">My personal blog</a></li>
 </ul>
 </span>
+{% if active %}
+<footer style="bottom:0%;position:fixed;">
+    <h3>
+    Currently coding <code>{{ project_name }}</code>
+    for <code>{{ hours }}</code> hours
+    <code>{{ minutes }}</code> minutes
+    <code>{{ seconds }}</code> seconds
+    {% if hostname != "" %}
+    on <code>{{ hostname }}</code>
+    {% endif %}
+    {% if language != "" %}
+    using <code>{{ language }}</code>.
+    {% endif %}
+    </h3>
+</footer>
+{% endif %}
 {% endblock content %}

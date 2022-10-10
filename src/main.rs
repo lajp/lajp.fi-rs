@@ -11,6 +11,7 @@ use futures_util::stream::StreamExt as _;
 use hmac::{Hmac, Mac};
 use rand::distributions::Alphanumeric;
 use rand::Rng;
+use serde_derive::{Deserialize, Serialize};
 use sha2::Sha256;
 use std::fs::File;
 use std::io::Write;
@@ -83,12 +84,87 @@ async fn update(
     Ok(HttpResponse::Ok().body("Update done! Reloading files now!"))
 }
 
+#[derive(Serialize, Deserialize)]
+struct HeartBeat {
+    project_name: Option<String>,
+    editor_name: Option<String>,
+    hostname: Option<String>,
+    language: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Activity {
+    started: chrono::NaiveDateTime,
+    duration: i32,
+    heartbeat: HeartBeat,
+}
+
+#[derive(Debug, Serialize)]
+struct IndexActivity {
+    active: bool,
+    seconds: Option<i64>,
+    minutes: Option<i64>,
+    hours: Option<i64>,
+    project_name: Option<String>,
+    editor_name: Option<String>,
+    hostname: Option<String>,
+    language: Option<String>,
+}
+
+impl From<Option<Activity>> for IndexActivity {
+    fn from(activity: Option<Activity>) -> Self {
+        match activity {
+            Some(a) => {
+                let duration = chrono::Duration::seconds(a.duration as i64);
+                Self {
+                    active: true,
+                    seconds: Some(duration.num_seconds() % 60),
+                    minutes: Some(duration.num_minutes() % 60),
+                    hours: Some(duration.num_hours()),
+                    project_name: a.heartbeat.project_name,
+                    editor_name: a.heartbeat.editor_name,
+                    hostname: a.heartbeat.hostname,
+                    language: a.heartbeat.language,
+                }
+            }
+            None => Self {
+                active: false,
+                seconds: None,
+                minutes: None,
+                hours: None,
+                project_name: None,
+                editor_name: None,
+                hostname: None,
+                language: None,
+            },
+        }
+    }
+}
+
 #[get("/")]
 async fn index(tmpl: web::Data<Mutex<Tera>>) -> Result<HttpResponse, Error> {
+    let res = reqwest::Client::new()
+        .get("https://api.testaustime.fi/users/@me/activity/current")
+        .bearer_auth(std::env::var("TESTAUSTIME_TOKEN").expect("No TESTAUSTIME_TOKEN"))
+        .send()
+        .await
+        .unwrap();
+
+    let activity = if let Ok(a) = res.json::<Activity>().await {
+        Some(a)
+    } else {
+        None
+    };
+
+    let index_activity = IndexActivity::from(activity);
+
     let res = tmpl
         .lock()
         .unwrap()
-        .render("index.html", &tera::Context::new())
+        .render(
+            "index.html",
+            &tera::Context::from_serialize(&index_activity).unwrap(),
+        )
         .map_err(|_| error::ErrorInternalServerError("Template error"))?;
     Ok(HttpResponse::Ok().content_type("text/html").body(res))
 }
