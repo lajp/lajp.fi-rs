@@ -1,5 +1,4 @@
 #![feature(once_cell)]
-#![feature(let_else)]
 
 mod models;
 mod payloadverifier;
