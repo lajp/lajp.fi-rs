@@ -115,7 +115,7 @@ impl From<Option<Activity>> for IndexActivity {
     fn from(activity: Option<Activity>) -> Self {
         match activity {
             Some(a) => {
-                let duration = chrono::Duration::seconds(a.duration as i64);
+                let duration = chrono::Local::now().naive_utc() - a.started;
                 Self {
                     active: true,
                     seconds: Some(duration.num_seconds() % 60),
