@@ -136,3 +136,62 @@ pub struct WorkflowRun {
 pub struct UpdatePayload {
     pub workflow_run: Option<WorkflowRun>,
 }
+
+#[derive(Serialize, Deserialize)]
+struct HeartBeat {
+    project_name: Option<String>,
+    editor_name: Option<String>,
+    hostname: Option<String>,
+    language: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Activity {
+    started: chrono::NaiveDateTime,
+    duration: i32,
+    heartbeat: HeartBeat,
+}
+
+#[derive(Debug, Serialize)]
+pub struct IndexActivity {
+    pub active: bool,
+    pub seconds: Option<i64>,
+    pub minutes: Option<i64>,
+    pub hours: Option<i64>,
+    pub project_name: Option<String>,
+    pub editor_name: Option<String>,
+    pub hostname: Option<String>,
+    pub language: Option<String>,
+}
+
+impl From<Option<Activity>> for IndexActivity {
+    fn from(activity: Option<Activity>) -> Self {
+        match activity {
+            Some(a) => {
+                let duration = chrono::Local::now().naive_utc() - a.started;
+                let reported_duration = chrono::Duration::seconds(a.duration as i64);
+
+                Self {
+                    active: (duration - reported_duration) <= chrono::Duration::seconds(900),
+                    seconds: Some(duration.num_seconds() % 60),
+                    minutes: Some(duration.num_minutes() % 60),
+                    hours: Some(duration.num_hours()),
+                    project_name: a.heartbeat.project_name,
+                    editor_name: a.heartbeat.editor_name,
+                    hostname: a.heartbeat.hostname,
+                    language: a.heartbeat.language,
+                }
+            }
+            None => Self {
+                active: false,
+                seconds: None,
+                minutes: None,
+                hours: None,
+                project_name: None,
+                editor_name: None,
+                hostname: None,
+                language: None,
+            },
+        }
+    }
+}

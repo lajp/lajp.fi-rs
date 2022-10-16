@@ -11,7 +11,6 @@ use futures_util::stream::StreamExt as _;
 use hmac::{Hmac, Mac};
 use rand::distributions::Alphanumeric;
 use rand::Rng;
-use serde_derive::{Deserialize, Serialize};
 use sha2::Sha256;
 use std::fs::File;
 use std::io::Write;
@@ -82,63 +81,6 @@ async fn update(
     blogcontext.lock().unwrap().reload();
 
     Ok(HttpResponse::Ok().body("Update done! Reloading files now!"))
-}
-
-#[derive(Serialize, Deserialize)]
-struct HeartBeat {
-    project_name: Option<String>,
-    editor_name: Option<String>,
-    hostname: Option<String>,
-    language: Option<String>,
-}
-
-#[derive(Serialize, Deserialize)]
-struct Activity {
-    started: chrono::NaiveDateTime,
-    duration: i32,
-    heartbeat: HeartBeat,
-}
-
-#[derive(Debug, Serialize)]
-struct IndexActivity {
-    active: bool,
-    seconds: Option<i64>,
-    minutes: Option<i64>,
-    hours: Option<i64>,
-    project_name: Option<String>,
-    editor_name: Option<String>,
-    hostname: Option<String>,
-    language: Option<String>,
-}
-
-impl From<Option<Activity>> for IndexActivity {
-    fn from(activity: Option<Activity>) -> Self {
-        match activity {
-            Some(a) => {
-                let duration = chrono::Local::now().naive_utc() - a.started;
-                Self {
-                    active: true,
-                    seconds: Some(duration.num_seconds() % 60),
-                    minutes: Some(duration.num_minutes() % 60),
-                    hours: Some(duration.num_hours()),
-                    project_name: a.heartbeat.project_name,
-                    editor_name: a.heartbeat.editor_name,
-                    hostname: a.heartbeat.hostname,
-                    language: a.heartbeat.language,
-                }
-            }
-            None => Self {
-                active: false,
-                seconds: None,
-                minutes: None,
-                hours: None,
-                project_name: None,
-                editor_name: None,
-                hostname: None,
-                language: None,
-            },
-        }
-    }
 }
 
 #[get("/")]
