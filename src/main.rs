@@ -189,7 +189,7 @@ async fn add_to_gallery(
                 ext.clear();
             }
 
-            let c = rand::thread_rng().sample(&Alphanumeric) as char;
+            let c = rand::thread_rng().sample(Alphanumeric) as char;
             img.path.truncate(img.path.len() - ext.len());
             img.name.truncate(img.name.len() - ext.len());
             img.path.push(c);
