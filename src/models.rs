@@ -137,7 +137,7 @@ pub struct UpdatePayload {
     pub workflow_run: Option<WorkflowRun>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct HeartBeat {
     project_name: Option<String>,
     editor_name: Option<String>,
@@ -145,7 +145,7 @@ struct HeartBeat {
     language: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Activity {
     started: chrono::NaiveDateTime,
     duration: i32,

@@ -6,6 +6,7 @@ mod payloadverifier;
 use crate::models::*;
 use actix_files::Files;
 use actix_multipart::Multipart;
+use actix_rt::time;
 use actix_web::{dev, error, guard, middleware, web, App, Error, HttpResponse, HttpServer, Result};
 use futures_util::stream::StreamExt as _;
 use hmac::{Hmac, Mac};
@@ -83,8 +84,7 @@ async fn update(
     Ok(HttpResponse::Ok().body("Update done! Reloading files now!"))
 }
 
-#[get("/")]
-async fn index(tmpl: web::Data<Mutex<Tera>>) -> Result<HttpResponse, Error> {
+async fn get_activity(a: &web::Data<Mutex<Option<Activity>>>) {
     let res = reqwest::Client::new()
         .get("https://api.testaustime.fi/users/@me/activity/current")
         .bearer_auth(std::env::var("TESTAUSTIME_TOKEN").expect("No TESTAUSTIME_TOKEN"))
@@ -92,13 +92,20 @@ async fn index(tmpl: web::Data<Mutex<Tera>>) -> Result<HttpResponse, Error> {
         .await
         .unwrap();
 
-    let activity = if let Ok(a) = res.json::<Activity>().await {
-        Some(a)
-    } else {
-        None
-    };
+    if let Ok(na) = res.json::<Activity>().await {
+        if let Ok(mut l) = a.try_lock() {
+            *l = Some(na);
+        }
+    }
+}
 
-    let index_activity = IndexActivity::from(activity);
+#[get("/")]
+async fn index(
+    tmpl: web::Data<Mutex<Tera>>,
+    activity: web::Data<Mutex<Option<Activity>>>,
+) -> Result<HttpResponse, Error> {
+    let a = activity.lock().unwrap();
+    let index_activity = IndexActivity::from(a.clone());
 
     let res = tmpl
         .lock()
@@ -247,6 +254,17 @@ async fn main() -> std::io::Result<()> {
 
     let blogcontext = web::Data::new(Mutex::new(BlogContext::new("./templates/blog/")));
     let imagegallery = web::Data::new(Mutex::new(ImageGallery::new("./static/gallery/")));
+    let activity: web::Data<Mutex<Option<Activity>>> = web::Data::new(Mutex::new(None));
+    let activity_clone = activity.clone();
+
+    actix_rt::spawn(async move {
+        let mut interval = time::interval(std::time::Duration::from_secs(5));
+        loop {
+            interval.tick().await;
+            get_activity(&activity_clone).await;
+            println!("Updated activity");
+        }
+    });
 
     HttpServer::new(move || {
         let tera = Mutex::new(Tera::new("templates/**/*").unwrap());
@@ -263,6 +281,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(tera))
             .app_data(web::Data::clone(&blogcontext))
             .app_data(web::Data::clone(&imagegallery))
+            .app_data(web::Data::clone(&activity))
             .service(Files::new("/static", "./static"))
             .service(
                 web::scope("")
