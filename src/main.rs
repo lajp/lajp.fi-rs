@@ -262,7 +262,6 @@ async fn main() -> std::io::Result<()> {
         loop {
             interval.tick().await;
             get_activity(&activity_clone).await;
-            println!("Updated activity");
         }
     });
 
