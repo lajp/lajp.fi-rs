@@ -118,6 +118,11 @@ async fn index(
     Ok(HttpResponse::Ok().content_type("text/html").body(res))
 }
 
+#[get("/health")]
+async fn checkhealth() -> Result<HttpResponse, Error> {
+    Ok(HttpResponse::Ok().finish())
+}
+
 #[get("/{page}")]
 async fn pages(
     tmpl: web::Data<Mutex<Tera>>,
@@ -288,6 +293,7 @@ async fn main() -> std::io::Result<()> {
                         r#"%{r}a "%r" %s %b "%{Referer}i" "%{User-Agent}i" %Dms"#,
                     ))
                     .service(index)
+                    .service(checkhealth)
                     .service(blogindex)
                     .service(gallery)
                     .service(txtfiles)
