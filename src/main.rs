@@ -263,7 +263,7 @@ async fn main() -> std::io::Result<()> {
     let activity_clone = activity.clone();
 
     actix_rt::spawn(async move {
-        let mut interval = time::interval(std::time::Duration::from_secs(5));
+        let mut interval = time::interval(std::time::Duration::from_secs(30));
         loop {
             interval.tick().await;
             get_activity(&activity_clone).await;
