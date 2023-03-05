@@ -80,8 +80,7 @@ where
             payload.unread_data(body);
             req.set_payload(payload.into());
 
-            let res = service.call(req).await?;
-            Ok(res)
+            service.call(req).await
         })
     }
 }
