@@ -74,8 +74,12 @@ where
             };
 
             Box::pin(async move {
-                let _ = db_clone.new_visit(visit).await;
-                service.call(req).await
+                let res = service.call(req).await?;
+                if res.status().is_success() {
+                    let _ = db_clone.new_visit(visit).await;
+                }
+
+                Ok(res)
             })
         } else {
             Box::pin(async move { service.call(req).await })
