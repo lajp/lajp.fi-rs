@@ -323,6 +323,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::clone(&activity))
             .app_data(web::Data::new(database.clone()))
             .service(Files::new("/static", "./static"))
+            .service(checkhealth)
             .service(
                 web::scope("")
                     .wrap(middleware::Logger::new(
@@ -333,7 +334,6 @@ async fn main() -> std::io::Result<()> {
                     })
                     .service(index)
                     .service(stats)
-                    .service(checkhealth)
                     .service(blogindex)
                     .service(gallery)
                     .service(txtfiles)
