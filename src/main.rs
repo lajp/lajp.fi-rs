@@ -86,8 +86,7 @@ async fn update(
 
 async fn get_activity(a: &web::Data<Mutex<Option<Activity>>>) {
     let res = reqwest::Client::new()
-        .get("https://api.testaustime.fi/users/@me/activity/current")
-        .bearer_auth(std::env::var("TESTAUSTIME_TOKEN").expect("No TESTAUSTIME_TOKEN"))
+        .get("https://api.testaustime.fi/users/lajp/activity/current")
         .send()
         .await
         .unwrap();
