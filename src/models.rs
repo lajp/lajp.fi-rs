@@ -195,3 +195,18 @@ impl From<Option<Activity>> for IndexActivity {
         }
     }
 }
+
+#[derive(Queryable, Clone, Serialize)]
+pub struct Visits {
+    pub path: String,
+    pub visit_count: i64,
+}
+
+use crate::schema::visits;
+#[derive(Insertable)]
+#[diesel(table_name = visits)]
+pub struct Visit {
+    pub visitor: String,
+    pub path: String,
+    pub instance: chrono::NaiveDateTime,
+}

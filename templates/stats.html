@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Website statistics</h2>
+<p><span title="Some of these do not exist">Pages</span> sorted by visit count</p>
+<table>
+    <tr>
+        <th>Page</th>
+        <th>Visits</th>
+    </tr>
+{% for page in pages %}
+    <tr>
+        <td><a href="{{ page.path }}">{{ page.path }}</a></td>
+        <td>{{ page.visit_count }}</td>
+    </tr>
+{% endfor %}
+</table>
+<br><br>
+{% endblock content %}

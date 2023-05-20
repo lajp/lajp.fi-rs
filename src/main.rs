@@ -1,17 +1,23 @@
-#![feature(once_cell)]
+#![feature(lazy_cell)]
 
+mod database;
+mod error;
 mod models;
 mod payloadverifier;
+mod schema;
+mod visitcounter;
 
+use crate::database::Database;
 use crate::models::*;
 use actix_files::Files;
 use actix_multipart::Multipart;
 use actix_rt::time;
-use actix_web::{dev, error, guard, middleware, web, App, Error, HttpResponse, HttpServer, Result};
+use actix_web::{dev, guard, middleware, web, App, Error, HttpResponse, HttpServer, Result};
 use futures_util::stream::StreamExt as _;
 use hmac::{Hmac, Mac};
 use rand::distributions::Alphanumeric;
 use rand::Rng;
+use serde_derive::Serialize;
 use sha2::Sha256;
 use std::fs::File;
 use std::io::Write;
@@ -21,6 +27,9 @@ use tera::Tera;
 
 #[macro_use]
 extern crate actix_web;
+
+#[macro_use]
+extern crate diesel;
 
 async fn update(
     payload: web::Json<UpdatePayload>,
@@ -111,9 +120,9 @@ async fn index(
         .unwrap()
         .render(
             "index.html",
-            &tera::Context::from_serialize(&index_activity).unwrap(),
+            &tera::Context::from_serialize(index_activity).unwrap(),
         )
-        .map_err(|_| error::ErrorInternalServerError("Template error"))?;
+        .map_err(|_| actix_web::error::ErrorInternalServerError("Template error"))?;
     Ok(HttpResponse::Ok().content_type("text/html").body(res))
 }
 
@@ -134,7 +143,7 @@ async fn pages(
             &format!("{}.html", &path.0.trim_end_matches(".html")),
             &tera::Context::new(),
         )
-        .map_err(|_| error::ErrorNotFound("No such page"))?;
+        .map_err(|_| actix_web::error::ErrorNotFound("No such page"))?;
     Ok(HttpResponse::Ok().content_type("text/html").body(res))
 }
 
@@ -150,7 +159,7 @@ async fn blogindex(
             "blogindex.html",
             &tera::Context::from_serialize(&*blogcontext.lock().unwrap()).unwrap(),
         )
-        .map_err(|_| error::ErrorInternalServerError("Template error"))?;
+        .map_err(|_| actix_web::error::ErrorInternalServerError("Template error"))?;
     Ok(HttpResponse::Ok().content_type("text/html").body(res))
 }
 
@@ -166,7 +175,7 @@ async fn blogarticle(
             &format!("blog/{}.html", &path.0.trim_end_matches(".html")),
             &tera::Context::new(),
         )
-        .map_err(|_| error::ErrorNotFound("No such article"))?;
+        .map_err(|_| actix_web::error::ErrorNotFound("No such article"))?;
     Ok(HttpResponse::Ok().content_type("text/html").body(res))
 }
 
@@ -217,7 +226,7 @@ async fn add_to_gallery(
         return Ok(HttpResponse::Ok().finish());
     }
 
-    Err(error::ErrorBadRequest("You have done stupiding"))
+    Err(actix_web::error::ErrorBadRequest("You have done stupiding"))
 }
 
 #[get("/gallery")]
@@ -233,14 +242,39 @@ async fn gallery(
             "gallery.html",
             &tera::Context::from_serialize(&imagegallery).unwrap(),
         )
-        .map_err(|_| error::ErrorInternalServerError("Template error"))?;
+        .map_err(|_| actix_web::error::ErrorInternalServerError("Template error"))?;
+    Ok(HttpResponse::Ok().content_type("text/html").body(res))
+}
+
+#[derive(Serialize)]
+struct VisitContext {
+    pages: Vec<Visits>,
+}
+
+#[get("/stats")]
+async fn stats(
+    db: web::Data<Database>,
+    tmpl: web::Data<Mutex<Tera>>,
+) -> Result<HttpResponse, Error> {
+    let mut visits = db.visits_per_path().await?;
+    visits.sort_by_key(|v| -v.visit_count);
+    let visitcontext = VisitContext { pages: visits };
+
+    let res = tmpl
+        .lock()
+        .unwrap()
+        .render(
+            "stats.html",
+            &tera::Context::from_serialize(visitcontext).unwrap(),
+        )
+        .map_err(|_| actix_web::error::ErrorInternalServerError("Template error"))?;
     Ok(HttpResponse::Ok().content_type("text/html").body(res))
 }
 
 #[get("/{file}.txt")]
 async fn txtfiles(path: web::Path<(String,)>) -> Result<HttpResponse, Error> {
     let content = std::fs::read_to_string(format!("static/{}.txt", &path.0))
-        .map_err(|_| error::ErrorNotFound("This, I do not have :/"))?;
+        .map_err(|_| actix_web::error::ErrorNotFound("This, I do not have :/"))?;
     Ok(HttpResponse::Ok().content_type("text/plain").body(content))
 }
 
@@ -260,6 +294,8 @@ async fn main() -> std::io::Result<()> {
     let imagegallery = web::Data::new(Mutex::new(ImageGallery::new("./static/gallery/")));
     let activity: web::Data<Mutex<Option<Activity>>> = web::Data::new(Mutex::new(None));
     let activity_clone = activity.clone();
+
+    let database = Database::new();
 
     actix_rt::spawn(async move {
         let mut interval = time::interval(std::time::Duration::from_secs(30));
@@ -285,13 +321,18 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::clone(&blogcontext))
             .app_data(web::Data::clone(&imagegallery))
             .app_data(web::Data::clone(&activity))
+            .app_data(web::Data::new(database.clone()))
             .service(Files::new("/static", "./static"))
             .service(
                 web::scope("")
                     .wrap(middleware::Logger::new(
                         r#"%{r}a "%r" %s %b "%{Referer}i" "%{User-Agent}i" %Dms"#,
                     ))
+                    .wrap(visitcounter::VisitCounter {
+                        db: database.clone(),
+                    })
                     .service(index)
+                    .service(stats)
                     .service(checkhealth)
                     .service(blogindex)
                     .service(gallery)
