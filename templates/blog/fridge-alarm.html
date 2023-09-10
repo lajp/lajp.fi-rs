@@ -1,0 +1,66 @@
+{% extends "blogbase.html" %}
+{% block title %}SIDE-PROJECT: Making a fridge door alarm system{% endblock %}
+{% block date %}2023-09-10{% endblock %}
+{% block description %} How I made my fridge a nudge smarter by teaching it to scream whenever left open{% endblock %}
+{% block blogcontent %}
+<h2>Side-project Sunday #1: Making my fridge a bit smarter</h2>
+<h3>Introduction</h3>
+<p>So I've recently moved into my own place, a small apartment close to the university campus.</p>
+
+<p>My apartment is great and all but there seems to be one huge problem.
+My fridge which I more often than not <span title="It's empty so the door doesn't have enough weight to slam shut on its own">fail to close</span>
+is stupid enough to not have an alarm system to notify its users when it has been left open.</p>
+
+<p>The only logical solution to <span title="an engineering student">me</span> was to come up with a system that sets up an alarm whenever the
+fridge has not been closed properly (as opposed to just teaching myself how to close the fridge).</p>
+
+<p>I thought that while I was at it, I might as well implement a system that logs the fridge-door usage for some potential future analysis.
+Therefore I decided to increment a counter in the Arduino EEPROM every time the fridge is opened.</p>
+
+<p>So this Sunday I woke up <span title="around noon">early</span> and started building the contraption.</p>
+
+<h3>The project</h3>
+<p>I've brought with me <span title="some Arduino-microcontrollers and other basic electrical components">some hobbyist electronics</span>
+from my childhood home and decided to make some use of them.</p>
+
+<p>In case you would like to build it yourself, here is a (more or less) complete list of items I used:</p>
+<ul>
+    <li>An Arduino-UNO board
+        (Basically any Arduino or non-Arduino microcontroller board would work, but is what I had
+        and I couldn't get my Arduino-NANO working for some reason)
+    </li>
+    <li>A "piezo" buzzer</li>
+    <li>A tactile switch</li>
+    <li>A random piece of acrylic</li>
+    <li>Some jumper wires</li>
+    <li>Double-sided tape</li>
+</ul>
+
+<p>Here's an attempt on a circuit diagram of the contraption (I'm not very good a drawing these)</p>
+<img src="/static/fridge-alarm-circuit.webp" alt="A circuit diagram depicting my wirings">
+
+<h3>The code</h3>
+<p>I wrote, in total, two different Arduino-Sketches for this project.
+One for the actual alarm system and another one for managing and reading the statistic written in the EEPROM of the Arduino</p>
+
+<p>They're quite simple scripts (as one would imagine for a project of this scale) in which the most notable is to remember to use
+the button pin in the correct mode: <code>pinMode(BUTTON_PIN, INPUT_PULLUP)</code>.</p>
+
+<p>I added <span title="completely optional">a delay</span> before the code starts playing the alarm because I don't if my neighbors
+would be very keen on listening to the beeping every time I open my fridge. One could also expand the code to feature a rhythm or perhaps even
+a melody that would play when the fridge is left open. I couldn't really manage this in my time frame and besides that I wanted the functionality
+over any aesthetics or other pleasantries anyways.</p>
+
+<p>I've published the Sketches <a href="https://github.com/lajp/fridge-alarm">on GitHub</a> and they're licensed under MIT so feel free to use them</p>
+
+<h3>Conclusion and demo</h3>
+<p>Below is a demo-video of the project:</p>
+<video width=100% controls>
+    <source src="/static/fridge_alarm.mp4" type="video/mp4">
+</video>
+<p>In conclusion I deem the project "a great success" out of 10</p>
+
+<h3>Credits</h3>
+<p>I'd like to issue a special "thank you" to <span title="the best electrical engineering student in Aalto">my friend</span> for helping me with
+this project and providing some of the tools.</p>
+{% endblock %}
